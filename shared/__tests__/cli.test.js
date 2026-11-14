@@ -14,6 +14,8 @@ import { logMetricAdapter } from "../../datadog/lib/log-metrics/adapter.js";
 import { syntheticTestAdapter } from "../../datadog/lib/synthetic-tests/adapter.js";
 import { syntheticSuiteAdapter } from "../../datadog/lib/synthetic-suites/adapter.js";
 import { pageAdapter } from "../../confluence/lib/pages/adapter.js";
+import { parseDocument } from "yaml";
+import { listManifestEntries } from "../manifest.js";
 
 function parseDatadog(argumentsText) {
   return parseCliArguments(argumentsText.split(" "), DATADOG_KINDS);
@@ -320,6 +322,33 @@ describe("runCli", () => {
     assert.equal(summary.failed, 1);
     assert.match(summary.results[0].message, /--suite: .*--name=unknown/);
     assert.equal(createClient.mock.callCount(), 0);
+  });
+
+  test("keeps the results gathered so far when saving the manifest fails", async () => {
+    silenceOutput();
+    const document = parseDocument(
+      'missing-dashboard.json:\n  kind: "dashboard"\n  id: "abc-123"\n'
+    );
+
+    const summary = await runCli({
+      kinds: DATADOG_KINDS,
+      usage: "usage",
+      argv: ["--dashboards", "--push"],
+      createClient: () => ({}),
+      loadManifest: async () => ({
+        document,
+        entries: listManifestEntries(document),
+      }),
+      saveManifest: async () => {
+        throw new Error("Document with errors cannot be stringified");
+      },
+    });
+
+    assert.equal(summary.ok, false);
+    assert.match(summary.error ?? "", /Couldn't save the manifest: Document/);
+    assert.equal(summary.total, 1);
+    assert.equal(summary.results[0].path, "missing-dashboard.json");
+    assert.equal(process.exitCode, 1);
   });
 
   test("reports an unexpected error in the summary", async () => {

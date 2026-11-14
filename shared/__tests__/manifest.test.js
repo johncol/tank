@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { parseDocument } from "yaml";
 import {
   listManifestEntries,
+  parseManifest,
   findEntryByField,
   findEntryById,
   updateManifestEntry,
@@ -113,4 +114,42 @@ test("updateManifestEntry auto-vivifies a brand-new entry", () => {
   assert.equal(result["synced/c.md"].title, "Doc C");
   assert.equal(result["synced/c.md"].id, "333");
   assert.equal(result["synced/c.md"].remoteVersion, 1);
+});
+
+test("parseManifest parses a valid manifest", () => {
+  const { entries } = parseManifest(SAMPLE_MANIFEST, "sync-manifest.yaml");
+
+  assert.deepEqual(
+    entries.map((entry) => entry.path),
+    ["synced/a.md", "synced/b.md"]
+  );
+});
+
+test("parseManifest fails on merge conflict markers", () => {
+  const conflicted = `<<<<<<< HEAD
+synced/a.md:
+  id: "111"
+=======
+synced/a.md:
+  id: "999"
+>>>>>>> other-branch
+`;
+
+  assert.throws(
+    () => parseManifest(conflicted, "datadog/sync-manifest.yaml"),
+    /^Error: datadog\/sync-manifest\.yaml can't be parsed \(merge conflict\?\): .+\. Fix it, then run again\.$/s
+  );
+});
+
+test("parseManifest fails on duplicate keys", () => {
+  const duplicated = `synced/a.md:
+  id: "111"
+synced/a.md:
+  id: "999"
+`;
+
+  assert.throws(
+    () => parseManifest(duplicated, "sync-manifest.yaml"),
+    /sync-manifest\.yaml can't be parsed .*Map keys must be unique/s
+  );
 });

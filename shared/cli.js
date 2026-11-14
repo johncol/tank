@@ -58,6 +58,20 @@ export class UsageError extends Error {
   }
 }
 
+/** The manifest couldn't be saved after the action ran. Carries the
+ * action's results, since their remote writes already happened. */
+class ManifestSaveError extends Error {
+  /**
+   * @param {unknown} cause
+   * @param {Object[]} results
+   */
+  constructor(cause, results) {
+    super(`Couldn't save the manifest: ${getErrorMessage(cause)}`, { cause });
+    this.name = "ManifestSaveError";
+    this.results = results;
+  }
+}
+
 /**
  * Parses and validates a tool's command-line arguments against the tool's
  * kinds. A tool with several kinds requires exactly one kind flag; a tool
@@ -426,7 +440,11 @@ async function runAction(options, tool) {
     }
   }
 
-  await tool.saveManifest(document);
+  try {
+    await tool.saveManifest(document);
+  } catch (error) {
+    throw new ManifestSaveError(error, results);
+  }
 
   return results;
 }
@@ -477,7 +495,10 @@ export async function runCli({
       console.error(error);
     }
 
-    summary = buildSummary([], getErrorMessage(error));
+    summary = buildSummary(
+      error instanceof ManifestSaveError ? error.results : [],
+      getErrorMessage(error)
+    );
   }
 
   reportSummary(summary);

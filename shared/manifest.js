@@ -12,7 +12,24 @@ export const MANIFEST_FILE_NAME = "sync-manifest.yaml";
  */
 export async function loadManifest(manifestPath) {
   const raw = await readFile(manifestPath, "utf8");
+
+  return parseManifest(raw, manifestPath);
+}
+
+/**
+ * Parses a sync manifest's YAML text (see `loadManifest`). Throws if the
+ * YAML has errors (e.g. merge conflict markers or duplicate keys), since
+ * the YAML parser doesn't: it would return junk entries, and the error
+ * would only surface when saving, after the action wrote to the remote.
+ */
+export function parseManifest(raw, manifestPath) {
   const document = parseDocument(raw);
+
+  if (document.errors.length > 0) {
+    throw new Error(
+      `${manifestPath} can't be parsed (merge conflict?): ${document.errors[0].message}. Fix it, then run again.`
+    );
+  }
 
   return {
     document,
