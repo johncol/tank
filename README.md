@@ -93,13 +93,23 @@ Brings the current project up to date with this working copy of tank. It adds or
 
 There's no list of projects, so `tank upgrade` only runs on the current one. Run it in each project when you next work there.
 
+### `tank status`
+
+Lists the files that differ from what each tool's manifest tracks, without credentials or network calls:
+
+- `modified`: tracked, but changed locally since the last sync. Push it, or pull it to discard the change.
+- `missing`: tracked, but the file is gone. Pull it to restore it.
+- `untracked`: in a tool's folder, but in no manifest (hidden files like `.DS_Store` are ignored).
+
+Each one is a `success` result with its `state`, and in-sync files are left out. Since it never calls a remote, it can't tell whether a remote changed: `--pull` does that.
+
 ### `tank docs`
 
 Prints where this working copy of tank keeps its docs: the absolute paths of `README.md` and `CONVENTIONS.md`, one per line on stderr. It works anywhere, even outside a project, and never reads credentials. Like every command, it also prints one JSON summary to stdout, with one result per doc holding its `path`.
 
 The `AGENTS.md` and `README.md` blocks tell readers to run `tank docs` instead of naming tank's folder, since each teammate may have tank checked out somewhere else.
 
-`tank init` and `tank upgrade` print one JSON summary, like the sync commands. The sync commands (`tank confluence`, `tank datadog`) never touch git, and `tank upgrade` never commits: only `tank init` does.
+`tank init`, `tank upgrade`, and `tank status` print one JSON summary, like the sync commands. The sync commands (`tank confluence`, `tank datadog`) never touch git, and `tank upgrade` never commits: only `tank init` does.
 
 ## Commands at a glance
 

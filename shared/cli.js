@@ -37,7 +37,7 @@ import {
 
 /** The tool's manifest doesn't exist, e.g. in a project initialized before
  * the tool was added to tank. Its message is reported without a stack. */
-class MissingManifestError extends Error {
+export class MissingManifestError extends Error {
   /** @param {string} rootDir The tool's folder. */
   constructor(rootDir) {
     const manifestPath = `${path.basename(rootDir)}/${MANIFEST_FILE_NAME}`;
@@ -54,7 +54,7 @@ class MissingManifestError extends Error {
  * @param {string} rootDir The tool's folder.
  * @throws {MissingManifestError} When the manifest doesn't exist.
  */
-async function loadToolManifest(rootDir) {
+export async function loadToolManifest(rootDir) {
   try {
     return await loadManifestFile(path.join(rootDir, MANIFEST_FILE_NAME));
   } catch (error) {

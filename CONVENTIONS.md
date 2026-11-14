@@ -124,16 +124,17 @@ Every run prints exactly one JSON summary to stdout, and exits 0 when every resu
 
 Every result has the same fields:
 
-| Field           | Holds                                                                                               |
-| --------------- | --------------------------------------------------------------------------------------------------- |
-| `kind`          | The artifact's kind.                                                                                |
-| `id`            | The remote ID, when known.                                                                          |
-| `path`          | The local path, when known.                                                                         |
-| `action`        | `fetch`, `pull`, `push`, `create`, or `delete` (`init`, `upgrade`, or `docs` for project commands). |
-| `status`        | `success`, `skipped` (nothing needed to change), or `failed`.                                       |
-| `remoteVersion` | The `remoteVersion` now tracked, when known.                                                        |
-| `message`       | Why it failed, or a follow-up step the user should take (e.g. pull a suite's tests).                |
-| `movedFrom`     | The previous path, only when a pull moved the file.                                                 |
+| Field           | Holds                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------- |
+| `kind`          | The artifact's kind.                                                                                          |
+| `id`            | The remote ID, when known.                                                                                    |
+| `path`          | The local path, when known.                                                                                   |
+| `action`        | `fetch`, `pull`, `push`, `create`, or `delete` (`init`, `upgrade`, `status`, or `docs` for project commands). |
+| `status`        | `success`, `skipped` (nothing needed to change), or `failed`.                                                 |
+| `remoteVersion` | The `remoteVersion` now tracked, when known.                                                                  |
+| `message`       | Why it failed, or a follow-up step the user should take (e.g. pull a suite's tests).                          |
+| `movedFrom`     | The previous path, only when a pull moved the file.                                                           |
+| `state`         | Only from `tank status`: `modified`, `missing`, or `untracked`.                                               |
 
 An action returns its own artifact's result first, followed by one result for every other artifact it fetched or updated along the way.
 
@@ -148,7 +149,7 @@ Declared in the kind's adapter, and covered by the contract tests:
 - Kind-specific checks, each marked forceable or not.
 - Follow-up artifacts (a suite fetching its untracked tests) and follow-up messages (a suite delete asking to pull its tests). Follow-up artifacts are of another of the tool's kinds (`followUpKind`), whose adapter `runCli` passes in, as it does the parent's.
 
-## Project commands: `init`, `upgrade`, and `docs`
+## Project commands: `init`, `upgrade`, `status`, and `docs`
 
 They don't act on artifacts, so they take no action or kind flags (only `--help`). They print the same JSON summary, with one result per file they check (`skipped` when it needed no change), one per migration that ran, and, for `init`, one per git step (without a `path`). Each holds `path`, `action` (`init` or `upgrade`), `status`, and, when useful, `message`.
 
@@ -169,6 +170,8 @@ They don't act on artifacts, so they take no action or kind flags (only `--help`
 4. Appends commented placeholders for new domain settings to `tank.env`.
 
 Only `init` touches git. Sync commands and `upgrade` never do.
+
+`tank status` runs only at a project root, and never reads credentials or calls a remote. It reports, as `success` results with a `state`, every file that differs from its tool's manifest: `modified` (content doesn't match `contentHash`), `missing` (tracked, but no file), or `untracked` (in the tool's folder, in no manifest; hidden files are ignored). In-sync files are left out. A tool without a manifest gets a `failed` result asking to run `tank upgrade`, and the other tools are still checked.
 
 `tank docs` runs anywhere and never reads credentials. It prints the absolute paths of this working copy's `README.md` and `CONVENTIONS.md` to stderr, one per line, and the same JSON summary to stdout, with one `success` result per doc holding its `path`. The managed blocks point at `tank docs` rather than at tank's folder, so they read the same for everyone.
 

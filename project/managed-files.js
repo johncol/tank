@@ -32,6 +32,7 @@ CONVENTIONS.md. Run \`tank docs\` to see where they are.
 - \`tank.env\` is committed and holds only domain settings. Credentials live
   in \`${USER_ENV_DISPLAY_PATH}\`.
 - Sync commands never touch git: commit artifact changes yourself.
+- Run \`tank status\` to see local files that aren't synced yet.
 - After tank changes, run \`tank upgrade\` and review the diff.
 `;
 

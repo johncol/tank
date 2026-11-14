@@ -9,10 +9,10 @@ import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
 
 /**
- * Runs "tank init", "tank upgrade", or "tank docs" from the command line:
- * they take no arguments but `--help`, and get the project root (which
- * "tank docs" ignores). Prints exactly one JSON summary
- * to stdout, with the results gathered so far when the run stops with an
+ * Runs "tank init", "tank upgrade", "tank status", or "tank docs" from the
+ * command line: they take no arguments but `--help`, and get the project
+ * root (which "tank docs" ignores). Prints exactly one JSON summary to
+ * stdout, with the results gathered so far when the run stops with an
  * error, and sets the exit code, the same way as the sync tools' runCli.
  *
  * @param {Object} command

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { runDocs } from "../project/docs.js";
 import { runInit } from "../project/init.js";
+import { runStatus } from "../project/status.js";
 import { runUpgrade } from "../project/upgrade.js";
 import { assertProjectRoot } from "../project/project-root.js";
 import { TOOLS } from "../project/tools.js";
@@ -27,6 +28,10 @@ const COMMANDS = [
     name: "upgrade",
     description:
       "Brings the current project up to date with this version of tank.",
+  },
+  {
+    name: "status",
+    description: "Lists local files that differ from the manifests, offline.",
   },
   {
     name: "docs",
@@ -58,6 +63,8 @@ if (commandName !== undefined && isHelpRequest([commandName])) {
   await runDocs(commandArguments);
 } else if (commandName === "upgrade") {
   await runInProjectRoot(runUpgrade);
+} else if (commandName === "status") {
+  await runInProjectRoot(runStatus);
 } else if (tool) {
   await runInProjectRoot((argv) => runToolCli(tool, argv));
 } else {
