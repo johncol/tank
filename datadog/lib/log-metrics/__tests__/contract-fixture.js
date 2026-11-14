@@ -1,5 +1,5 @@
 import { logMetricAdapter } from "../adapter.js";
-import { formatLogMetricJson } from "../log-metric.js";
+import { formatJson } from "../../../../shared/json.js";
 
 /**
  * Runs log-based metrics through the action contract tests
@@ -104,14 +104,14 @@ export const logMetricContractFixture = {
   },
 
   editLocalContent(content) {
-    return formatLogMetricJson({
+    return formatJson({
       ...JSON.parse(content),
       filter: { query: "service:edited-locally" },
     });
   },
 
   buildNewLocalContent() {
-    return formatLogMetricJson({
+    return formatJson({
       filter: { query: "service:new" },
       compute: { aggregation_type: "count" },
     });

@@ -1,10 +1,7 @@
 import path from "node:path";
 import { isPathTracked } from "../../../shared/manifest.js";
-import {
-  stripReadOnlySuiteFields,
-  formatSuiteJson,
-  buildSuitePath,
-} from "./synthetic-suite.js";
+import { formatJson, omitFields } from "../../../shared/json.js";
+import { READ_ONLY_SUITE_FIELDS, buildSuitePath } from "./synthetic-suite.js";
 import { fetchUntrackedMemberTests } from "./fetch-member-tests.js";
 
 /**
@@ -46,7 +43,7 @@ export const syntheticSuiteAdapter = {
     return {
       title: suite.name,
       remoteVersion: suite.modified_at,
-      content: formatSuiteJson(stripReadOnlySuiteFields(suite)),
+      content: formatJson(omitFields(suite, READ_ONLY_SUITE_FIELDS)),
     };
   },
 

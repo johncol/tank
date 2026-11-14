@@ -1,5 +1,5 @@
 import { dashboardAdapter } from "../adapter.js";
-import { formatDashboardJson } from "../dashboard.js";
+import { formatJson } from "../../../../shared/json.js";
 
 /**
  * Runs dashboards through the action contract tests
@@ -84,7 +84,7 @@ export const dashboardContractFixture = {
   },
 
   editLocalContent(content) {
-    return formatDashboardJson({
+    return formatJson({
       ...JSON.parse(content),
       description: "Edited locally",
     });

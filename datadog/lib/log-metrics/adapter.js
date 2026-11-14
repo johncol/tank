@@ -1,8 +1,5 @@
-import {
-  formatLogMetricJson,
-  hashLogMetric,
-  hasComputeChanged,
-} from "./log-metric.js";
+import { formatJson } from "../../../shared/json.js";
+import { hashLogMetric, hasComputeChanged } from "./log-metric.js";
 
 const LOG_METRICS_PATH = "synced/log-metrics";
 
@@ -36,7 +33,7 @@ export const logMetricAdapter = {
     return {
       title: metric.id,
       remoteVersion: hashLogMetric(metric),
-      content: formatLogMetricJson(metric.attributes),
+      content: formatJson(metric.attributes),
     };
   },
 

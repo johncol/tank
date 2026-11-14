@@ -1,8 +1,6 @@
 import { isPathTracked } from "../../../shared/manifest.js";
-import {
-  stripReadOnlyDashboardFields,
-  formatDashboardJson,
-} from "./dashboard.js";
+import { formatJson, omitFields } from "../../../shared/json.js";
+import { READ_ONLY_DASHBOARD_FIELDS } from "./dashboard.js";
 import { buildTitledPath } from "../../../shared/slug.js";
 
 const DASHBOARDS_PATH = "synced/dashboards";
@@ -35,7 +33,7 @@ export const dashboardAdapter = {
     return {
       title: dashboard.title,
       remoteVersion: dashboard.modified_at,
-      content: formatDashboardJson(stripReadOnlyDashboardFields(dashboard)),
+      content: formatJson(omitFields(dashboard, READ_ONLY_DASHBOARD_FIELDS)),
     };
   },
 

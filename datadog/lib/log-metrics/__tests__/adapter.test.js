@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { parseDocument } from "yaml";
 import { logMetricAdapter } from "../adapter.js";
-import { formatLogMetricJson } from "../log-metric.js";
+import { formatJson } from "../../../../shared/json.js";
 import { fetchOne, pushOne, createOne } from "../../../../shared/actions.js";
 import { listManifestEntries } from "../../../../shared/manifest.js";
 
@@ -37,11 +37,7 @@ function resolve(artifactPath) {
 
 async function writeLocalMetric(attributes) {
   await mkdir(path.dirname(resolve(METRIC_PATH)), { recursive: true });
-  await writeFile(
-    resolve(METRIC_PATH),
-    formatLogMetricJson(attributes),
-    "utf8"
-  );
+  await writeFile(resolve(METRIC_PATH), formatJson(attributes), "utf8");
 }
 
 function buildNotFoundError() {
@@ -146,7 +142,7 @@ test("create sends group_by as [] when the file leaves it out, and rewrites the 
   ]);
   assert.equal(
     await readFile(resolve(METRIC_PATH), "utf8"),
-    formatLogMetricJson(createdMetric.attributes)
+    formatJson(createdMetric.attributes)
   );
   assert.equal(listManifestEntries(document)[0].title, METRIC_ID);
 });

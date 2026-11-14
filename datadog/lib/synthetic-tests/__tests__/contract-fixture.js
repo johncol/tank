@@ -1,5 +1,5 @@
 import { syntheticTestAdapter } from "../adapter.js";
-import { formatTestJson } from "../synthetic-test.js";
+import { formatJson } from "../../../../shared/json.js";
 import { syntheticSuiteAdapter } from "../../synthetic-suites/adapter.js";
 import { syntheticSuiteContractFixture } from "../../synthetic-suites/__tests__/contract-fixture.js";
 
@@ -151,7 +151,7 @@ export const syntheticTestContractFixture = {
   },
 
   editLocalContent(content) {
-    return formatTestJson({
+    return formatJson({
       ...JSON.parse(content),
       message: "Edited locally",
     });
@@ -159,7 +159,7 @@ export const syntheticTestContractFixture = {
 
   // Named like addRemote names the remote with the same key.
   buildNewLocalContent(key) {
-    return formatTestJson({
+    return formatJson({
       name: `Contract Test ${key}`,
       type: "api",
       locations: ["aws:us-east-1"],

@@ -3,14 +3,14 @@ import {
   listManifestEntries,
   isPathTracked,
 } from "../../../shared/manifest.js";
+import { formatJson, omitFields } from "../../../shared/json.js";
 import {
-  stripReadOnlyTestFields,
+  READ_ONLY_TEST_FIELDS,
   findReadOnlyTestFields,
-  formatTestJson,
   resolveTestFolder,
   NO_SUITE_FOLDER,
 } from "./synthetic-test.js";
-import { stripReadOnlySuiteFields } from "../synthetic-suites/synthetic-suite.js";
+import { READ_ONLY_SUITE_FIELDS } from "../synthetic-suites/synthetic-suite.js";
 import { buildTitledPath } from "../../../shared/slug.js";
 
 async function findTestFolder(client, document, testId) {
@@ -56,7 +56,7 @@ export const syntheticTestAdapter = {
     return {
       title: test.name,
       remoteVersion: test.modified_at,
-      content: formatTestJson(stripReadOnlyTestFields(test)),
+      content: formatJson(omitFields(test, READ_ONLY_TEST_FIELDS)),
     };
   },
 
@@ -130,7 +130,7 @@ export const syntheticTestAdapter = {
     kind: "synthetic-suite",
 
     async addChild(client, suiteId, liveSuite, testId) {
-      const suite = stripReadOnlySuiteFields(liveSuite);
+      const suite = omitFields(liveSuite, READ_ONLY_SUITE_FIELDS);
 
       await client.updateSyntheticSuite(suiteId, {
         ...suite,
@@ -144,7 +144,7 @@ export const syntheticTestAdapter = {
     },
 
     async removeChild(client, suiteId, liveSuite, testId) {
-      const suite = stripReadOnlySuiteFields(liveSuite);
+      const suite = omitFields(liveSuite, READ_ONLY_SUITE_FIELDS);
 
       await client.updateSyntheticSuite(suiteId, {
         ...suite,

@@ -18,7 +18,7 @@ export const MULTIPLE_SUITES_FOLDER = `${SYNTHETICS_PATH}/_multiple-suites`;
  * update -- metadata about the test's identity and history, not its
  * definition. The ones worth keeping are tracked in sync-manifest.yaml.
  */
-const READ_ONLY_FIELDS = [
+export const READ_ONLY_TEST_FIELDS = [
   "public_id",
   "created_at",
   "modified_at",
@@ -26,27 +26,10 @@ const READ_ONLY_FIELDS = [
   "monitor_id",
 ];
 
-/** Strips Datadog's read-only test metadata, leaving only the fields that
- * make up the test's write payload (name, config, locations, etc.). */
-export function stripReadOnlyTestFields(test) {
-  const cloned = { ...test };
-
-  for (const field of READ_ONLY_FIELDS) {
-    delete cloned[field];
-  }
-
-  return cloned;
-}
-
 /** Lists the read-only fields a test definition has, e.g. when it was
  * copied from another test's API response. */
 export function findReadOnlyTestFields(test) {
-  return READ_ONLY_FIELDS.filter((field) => field in test);
-}
-
-/** Serializes a test definition as pretty-printed JSON. */
-export function formatTestJson(test) {
-  return `${JSON.stringify(test, null, 2)}\n`;
+  return READ_ONLY_TEST_FIELDS.filter((field) => field in test);
 }
 
 /**

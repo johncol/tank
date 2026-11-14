@@ -1,11 +1,5 @@
 import { hashContent } from "../../../shared/hash.js";
-
-/** Serializes a log-based metric's definition (its `attributes`: filter,
- * group_by, compute) as pretty-printed JSON. The metric ID isn't included:
- * it's the file name and lives in the manifest. */
-export function formatLogMetricJson(attributes) {
-  return `${JSON.stringify(attributes, null, 2)}\n`;
-}
+import { formatJson } from "../../../shared/json.js";
 
 /**
  * Hashes a log-based metric's definition as Datadog returns it. Datadog's
@@ -14,7 +8,7 @@ export function formatLogMetricJson(attributes) {
  * tell whether the metric changed in Datadog since then.
  */
 export function hashLogMetric(metric) {
-  return hashContent(formatLogMetricJson(metric.attributes));
+  return hashContent(formatJson(metric.attributes));
 }
 
 /** Datadog fixes `compute` (aggregation type, path, percentiles) at creation

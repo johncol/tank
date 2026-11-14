@@ -1,11 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  stripReadOnlyDashboardFields,
-  formatDashboardJson,
-} from "../dashboard.js";
+import { formatJson, omitFields } from "../../../../shared/json.js";
+import { READ_ONLY_DASHBOARD_FIELDS } from "../dashboard.js";
 
-test("stripReadOnlyDashboardFields removes server-only metadata", () => {
+test("omitFields with READ_ONLY_DASHBOARD_FIELDS removes server-only metadata", () => {
   const dashboard = {
     id: "abc-def-123",
     title: "My Dashboard",
@@ -19,7 +17,7 @@ test("stripReadOnlyDashboardFields removes server-only metadata", () => {
     layout_type: "ordered",
   };
 
-  const stripped = stripReadOnlyDashboardFields(dashboard);
+  const stripped = omitFields(dashboard, READ_ONLY_DASHBOARD_FIELDS);
 
   assert.deepEqual(stripped, {
     title: "My Dashboard",
@@ -28,22 +26,25 @@ test("stripReadOnlyDashboardFields removes server-only metadata", () => {
   });
 });
 
-test("stripReadOnlyDashboardFields doesn't mutate the input", () => {
+test("omitFields with READ_ONLY_DASHBOARD_FIELDS doesn't mutate the input", () => {
   const dashboard = { id: "abc", title: "My Dashboard" };
 
-  stripReadOnlyDashboardFields(dashboard);
+  omitFields(dashboard, READ_ONLY_DASHBOARD_FIELDS);
 
   assert.equal(dashboard.id, "abc");
 });
 
-test("stripReadOnlyDashboardFields leaves a dashboard with no read-only fields untouched", () => {
+test("omitFields with READ_ONLY_DASHBOARD_FIELDS leaves a dashboard with no read-only fields untouched", () => {
   const dashboard = { title: "My Dashboard", widgets: [] };
 
-  assert.deepEqual(stripReadOnlyDashboardFields(dashboard), dashboard);
+  assert.deepEqual(
+    omitFields(dashboard, READ_ONLY_DASHBOARD_FIELDS),
+    dashboard
+  );
 });
 
-test("formatDashboardJson pretty-prints with a trailing newline", () => {
-  const formatted = formatDashboardJson({ title: "My Dashboard" });
+test("formatJson pretty-prints with a trailing newline", () => {
+  const formatted = formatJson({ title: "My Dashboard" });
 
   assert.equal(formatted, '{\n  "title": "My Dashboard"\n}\n');
 });

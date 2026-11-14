@@ -1,5 +1,5 @@
 import { syntheticSuiteAdapter } from "../adapter.js";
-import { formatSuiteJson } from "../synthetic-suite.js";
+import { formatJson } from "../../../../shared/json.js";
 
 /**
  * Runs synthetic suites through the action contract tests
@@ -95,7 +95,7 @@ export const syntheticSuiteContractFixture = {
   },
 
   editLocalContent(content) {
-    return formatSuiteJson({
+    return formatJson({
       ...JSON.parse(content),
       message: "Edited locally",
     });
