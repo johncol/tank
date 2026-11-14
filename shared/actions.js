@@ -898,8 +898,13 @@ export async function createOne(
     } catch (error) {
       // The remote can appear between the check above and the create.
       if (getErrorStatus(error) === 409) {
+        // Kinds that get their ID from the remote don't know it yet.
+        const subject = adapter.assignsIdOnCreate
+          ? `${adapter.label} with the same title`
+          : `${adapter.label} ${id}`;
+
         return fail(
-          `${adapter.label} ${id} already exists in ${adapter.systemName}. Use --fetch to track it instead.`
+          `${subject} already exists in ${adapter.systemName}. Use --fetch to track it instead.`
         );
       }
 

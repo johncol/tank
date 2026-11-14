@@ -756,6 +756,29 @@ for (const fixture of FIXTURES) {
           assert.equal(await readFile(resolve(artifactPath), "utf8"), content);
         });
 
+        test("fails when the remote appears before the create (409)", async () => {
+          adapter = {
+            ...adapter,
+            async createRemote() {
+              throw Object.assign(new Error("Conflict"), { status: 409 });
+            },
+          };
+          const { artifactPath, content } = await writeNewLocalFile(newTarget);
+
+          const [result] = await call(createOne, document, newTarget);
+
+          assert.equal(result.status, "failed");
+          assert.match(result.message, /already exists.*--fetch/);
+          assert.doesNotMatch(result.message, /undefined/);
+          if (assignsId) {
+            assert.match(result.message, /with the same title/);
+          } else {
+            assert.match(result.message, new RegExp(` ${firstId} `));
+          }
+          assert.equal(listManifestEntries(document).length, 0);
+          assert.equal(await readFile(resolve(artifactPath), "utf8"), content);
+        });
+
         if (fixture.adapter.parent) {
           describe("inside a parent", () => {
             const parentId = /** @type {string} */ (fixture.parentSampleId);
