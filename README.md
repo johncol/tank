@@ -116,13 +116,13 @@ The `AGENTS.md` and `README.md` blocks tell readers to run `tank docs` instead o
 
 Both tools share the same actions and flags, and the same command-line runner. Datadog also needs a kind flag on every call (`--dashboards`, `--log-metrics`, `--monitors`, `--synthetic-tests`, or `--synthetic-suites`), so an omitted flag never silently defaults to one kind. Confluence only has pages, so it doesn't need one (`--pages` is accepted but optional).
 
-| Action     | Confluence | Datadog                                             |
-| ---------- | ---------- | --------------------------------------------------- |
-| `--fetch`  | pages      | every kind                                          |
-| `--pull`   | pages      | every kind                                          |
-| `--push`   | pages      | every kind                                          |
-| `--create` | pages      | log-based metrics, monitors, synthetic tests        |
-| `--delete` | —          | log-based metrics, monitors, synthetic tests/suites |
+| Action     | Confluence | Datadog                                      |
+| ---------- | ---------- | -------------------------------------------- |
+| `--fetch`  | pages      | every kind                                   |
+| `--pull`   | pages      | every kind                                   |
+| `--push`   | pages      | every kind                                   |
+| `--create` | pages      | log-based metrics, monitors, synthetic tests |
+| `--delete` | —          | every kind                                   |
 
 Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked artifact, `--name` (its file name). Leave both out of `--pull`/`--push` to run on everything tracked in the manifest. `--delete` always needs one. `--file-name` names a new file on `--fetch` (pages, dashboards, and monitors only) and on `--create` (pages, monitors, and synthetic tests only). See `CONVENTIONS.md` for every flag rule.
 
@@ -196,12 +196,16 @@ tank datadog --dashboards --push --name=dynamic-rendering.json
 # Pull/push every tracked dashboard
 tank datadog --dashboards --pull
 tank datadog --dashboards --push
+
+# Delete a dashboard in Datadog, then its JSON file and manifest entry
+tank datadog --dashboards --delete --id=<dashboardId>
 ```
 
 - The local edit check compares against `contentHash`.
 - The remote change check compares the live `modified_at` against `remoteVersion`. Unlike Confluence, Datadog's dashboard API has no integer version field and no server-side optimistic concurrency of its own, so this check is purely client-side.
 - The tracked JSON is Datadog's dashboard definition with read-only, server-assigned fields (`id`, `author_handle`, `author_name`, `created_at`, `modified_at`, `url`, `is_read_only`) stripped out, since those live in the manifest instead.
 - If only `modified_at` moved on, `--pull` updates the manifest entry without rewriting the file.
+- `--delete` refuses to run if the local file has unpushed changes, if the dashboard changed in Datadog since the last sync, or if the dashboard no longer exists in Datadog. `--force` overrides all three; for a dashboard that no longer exists, it only removes the local file and manifest entry.
 
 ### Log-based metrics
 

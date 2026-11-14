@@ -19,7 +19,7 @@ export const dashboardAdapter = {
   kind: "dashboard",
   label: "Datadog dashboard",
   systemName: "Datadog",
-  actions: ["fetch", "pull", "push"],
+  actions: ["fetch", "pull", "push", "delete"],
   allowsFileName: true,
   usageNote: "Its ID is the dashboard ID.",
   fileNameSuffix: ".json",
@@ -40,5 +40,9 @@ export const dashboardAdapter = {
 
   async updateRemote(client, entry, content) {
     return client.updateDashboard(entry.id, JSON.parse(content));
+  },
+
+  async deleteRemote(client, id) {
+    await client.deleteDashboard(id);
   },
 };

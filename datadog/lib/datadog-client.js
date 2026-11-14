@@ -105,6 +105,12 @@ export class DatadogClient {
     });
   }
 
+  /** Deletes a dashboard. The monitors and metrics its widgets show aren't
+   * deleted. */
+  async deleteDashboard(dashboardId) {
+    await this.request(`/dashboard/${dashboardId}`, { method: "DELETE" });
+  }
+
   /** Fetches a log-based metric's definition. The response has no
    * modified_at or version field, only the metric's `id` (its name) and
    * `attributes` (filter, group_by, compute). */

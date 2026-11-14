@@ -48,6 +48,10 @@ export const dashboardContractFixture = {
           dashboards.set(id, updated);
           return structuredClone(updated);
         },
+        async deleteDashboard(id) {
+          getExisting(id);
+          dashboards.delete(id);
+        },
       },
       addRemote(id) {
         dashboards.set(id, {
