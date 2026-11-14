@@ -623,6 +623,14 @@ async function runAction(options, tool) {
     ? { ...parentDefinition, rootDir: tool.rootDir }
     : undefined;
   let results;
+  /** @param {Object[]} resultsSoFar */
+  const saveManifest = async (resultsSoFar) => {
+    try {
+      await tool.saveManifest(document);
+    } catch (error) {
+      throw new ManifestSaveError(error, resultsSoFar);
+    }
+  };
 
   if (action === "fetch") {
     results = await actions.fetchOne(
@@ -673,12 +681,16 @@ async function runAction(options, tool) {
     }[action];
 
     if (id === undefined && name === undefined) {
+      // Saved after each artifact, so an interrupted bulk run keeps what
+      // it already synced, rather than leaving remotes ahead of the
+      // manifest.
       results = await actions.runForEach(
         adapter,
         tool.createClient(),
         document,
         actionOne,
-        { force }
+        { force },
+        saveManifest
       );
     } else {
       const kindEntries = entries.filter(
@@ -718,11 +730,7 @@ async function runAction(options, tool) {
     }
   }
 
-  try {
-    await tool.saveManifest(document);
-  } catch (error) {
-    throw new ManifestSaveError(error, results);
-  }
+  await saveManifest(results);
 
   return results;
 }

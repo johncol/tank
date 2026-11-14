@@ -1158,6 +1158,14 @@ export async function deleteOne(
  * Runs a per-entry action (pullOne or pushOne) on every entry of the
  * adapter's kind, one at a time, so each succeeds or fails independently.
  *
+ * @param {Adapter} adapter
+ * @param {any} client
+ * @param {any} document
+ * @param {Function} actionOne
+ * @param {Object} [options] Passed to `actionOne`.
+ * @param {(results: Object[]) => Promise<void>} [afterEach] Called after
+ *   each entry with every result so far, e.g. to save the manifest, so an
+ *   interrupted run keeps what it already synced.
  * @returns {Promise<Object[]>} Every action's results, in order.
  */
 export async function runForEach(
@@ -1165,7 +1173,8 @@ export async function runForEach(
   client,
   document,
   actionOne,
-  options = {}
+  options = {},
+  afterEach = async () => {}
 ) {
   const entries = listManifestEntries(document).filter(
     (entry) => entry.kind === adapter.kind
@@ -1176,6 +1185,7 @@ export async function runForEach(
     results.push(
       ...(await actionOne(adapter, client, document, entry, options))
     );
+    await afterEach(results);
   }
 
   return results;

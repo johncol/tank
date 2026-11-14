@@ -1,11 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { parseDocument } from "yaml";
 import {
   listManifestEntries,
   parseManifest,
   findEntryById,
   removeManifestEntry,
+  saveManifest,
   stringifyManifest,
   updateManifestEntry,
 } from "../manifest.js";
@@ -193,4 +197,19 @@ synced/a.md:
     () => parseManifest(duplicated, "sync-manifest.yaml"),
     /sync-manifest\.yaml can't be parsed .*Map keys must be unique/s
   );
+});
+
+test("saveManifest replaces the manifest without leaving a temporary file", async () => {
+  const folder = await mkdtemp(path.join(os.tmpdir(), "tank-manifest-test-"));
+  const manifestPath = path.join(folder, "sync-manifest.yaml");
+
+  try {
+    await writeFile(manifestPath, "# Old.\n", "utf8");
+    await saveManifest(parseDocument(SAMPLE_MANIFEST), manifestPath);
+
+    assert.equal(await readFile(manifestPath, "utf8"), SAMPLE_MANIFEST);
+    assert.deepEqual(await readdir(folder), ["sync-manifest.yaml"]);
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
 });

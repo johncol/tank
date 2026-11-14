@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isMap, parseDocument, Scalar } from "yaml";
 
@@ -51,9 +51,14 @@ export function listManifestEntries(document) {
   }));
 }
 
-/** Writes the given manifest document back to the given manifest path. */
+/** Writes the given manifest document back to the given manifest path,
+ * through a temporary file renamed over it, so an interrupted write never
+ * leaves a truncated manifest. */
 export async function saveManifest(document, manifestPath) {
-  await writeFile(manifestPath, stringifyManifest(document), "utf8");
+  const temporaryPath = `${manifestPath}.tmp`;
+
+  await writeFile(temporaryPath, stringifyManifest(document), "utf8");
+  await rename(temporaryPath, manifestPath);
 }
 
 /** Returns the manifest document's YAML text. An emptied manifest is just its

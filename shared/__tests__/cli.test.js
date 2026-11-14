@@ -470,6 +470,45 @@ describe("runCli", () => {
     assert.equal(process.exitCode, 1);
   });
 
+  test("saves the manifest after each artifact of a bulk run", async () => {
+    silenceOutput();
+    const rootDir = await mkdtemp(path.join(os.tmpdir(), "tank-cli-test-"));
+    const document = parseDocument(
+      'first.json:\n  kind: "dashboard"\n  id: "first"\n  remoteVersion: "old"\n' +
+        'second.json:\n  kind: "dashboard"\n  id: "second"\n  remoteVersion: "old"\n'
+    );
+    const savedManifests = [];
+
+    try {
+      await runCli({
+        kinds: DATADOG_KINDS,
+        command: "tank test",
+        rootDir,
+        argv: ["--dashboards", "--pull"],
+        createClient: () => ({
+          getDashboard: async (id) => ({ id, title: id, modified_at: "new" }),
+        }),
+        loadManifest: async () => ({
+          document,
+          entries: listManifestEntries(document),
+        }),
+        saveManifest: async (savedDocument) => {
+          savedManifests.push(
+            listManifestEntries(parseDocument(String(savedDocument)))
+          );
+        },
+      });
+
+      const versionsAfterFirstSave = savedManifests[0].map(
+        (entry) => entry.remoteVersion
+      );
+
+      assert.deepEqual(versionsAfterFirstSave, ["new", "old"]);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("asks to run tank upgrade when the tool's manifest is missing, without creating the client", async () => {
     silenceOutput();
     const rootDir = await mkdtemp(path.join(os.tmpdir(), "tank-cli-test-"));
