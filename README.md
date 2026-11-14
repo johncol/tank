@@ -116,7 +116,7 @@ Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked
 - `--fetch` refuses to run if the ID is already tracked (use `--pull` to refresh it instead), if `--file-name` isn't kebab-case, or if the computed path already exists on disk but isn't tracked. It also refuses to write to a path that another entry already tracks, and `--force` never overrides that. A path named from the title doesn't hit this: when another entry has it, or the title has no letters or digits, the remote ID is added to the name instead (e.g. `homepage-us-abc-123.json`).
 - `--pull` refuses to overwrite a file with unsynced local edits (its content no longer matches the hash recorded in the manifest at the last sync). It reports an artifact that changed on neither side as `skipped` and writes nothing.
 - Each result holds `kind`, `id`, `path`, `action`, `status`, and, when known, `remoteVersion`, `message`, and `movedFrom`.
-- `--push` refuses to overwrite a remote artifact that changed since the last sync, and reports a file that hasn't changed since the last sync as `skipped` without calling the API. Bulk `--push` only sends what you edited.
+- `--push` refuses to overwrite a remote artifact that changed since the last sync, and reports a file that hasn't changed since the last sync as `skipped`. Bulk `--push` only sends what you edited, but it still reads every tracked artifact from the API to check it hasn't changed remotely.
 - Add `--force` to override those checks. With `--push`, `--force` also pushes unchanged files.
 - Sync commands never touch git. Only `--fetch` and `--create` add new entries to `sync-manifest.yaml`; everything else requires the artifact to already be tracked.
 
