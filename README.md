@@ -13,7 +13,7 @@ CONVENTIONS.md # the contract every action, flag, and kind follows
 
 ## Setup
 
-1. Install the dependencies:
+1. Install the dependencies (Node 20.19+, 22.13+, or 24+; `nvm use` picks the version in `.nvmrc`):
 
    ```bash
    cd ~/ReposJohn/tank && npm install
