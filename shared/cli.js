@@ -1,5 +1,6 @@
 import path from "node:path";
 import * as actions from "./actions.js";
+import { assertValidCapabilities } from "./adapter-capabilities.js";
 import { UsageError, parseCliArguments } from "./cli-arguments.js";
 import { buildUsage } from "./cli-usage.js";
 import {
@@ -281,6 +282,8 @@ export async function runCli({
     saveManifestFile(document, path.join(rootDir, MANIFEST_FILE_NAME)),
   argv = process.argv.slice(2),
 }) {
+  assertValidCapabilities(kinds);
+
   const usage = buildUsage({ command, kinds });
 
   if (isHelpRequest(argv)) {
