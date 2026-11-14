@@ -53,7 +53,15 @@ export function listManifestEntries(document) {
 
 /** Writes the given manifest document back to the given manifest path. */
 export async function saveManifest(document, manifestPath) {
-  await writeFile(manifestPath, String(document), "utf8");
+  await writeFile(manifestPath, stringifyManifest(document), "utf8");
+}
+
+/** Returns the manifest document's YAML text. An emptied manifest is just its
+ * header, like a new project's, rather than the header followed by `null`. */
+export function stringifyManifest(document) {
+  const text = String(document);
+
+  return document.contents === null ? text.replace(/\n?null\n$/, "") : text;
 }
 
 /**
@@ -66,7 +74,7 @@ export async function saveManifest(document, manifestPath) {
  * ambiguity with another YAML type).
  */
 export function updateManifestEntry(document, key, patch) {
-  // An emptied manifest is saved as `null` (see `removeManifestEntry`).
+  // An emptied manifest has no contents (see `removeManifestEntry`).
   if (!isMap(document.contents)) {
     document.contents = document.createNode({});
   }
@@ -75,6 +83,12 @@ export function updateManifestEntry(document, key, patch) {
   // block style, one entry field per line.
   if (document.contents.flow) {
     document.contents.flow = false;
+
+    for (const item of document.contents.items) {
+      if (isMap(item.value)) {
+        item.value.flow = false;
+      }
+    }
   }
 
   for (const [field, value] of Object.entries(patch)) {

@@ -7,6 +7,7 @@ import {
   findEntryByField,
   findEntryById,
   removeManifestEntry,
+  stringifyManifest,
   updateManifestEntry,
 } from "../manifest.js";
 
@@ -126,7 +127,11 @@ synced/a.md:
 `);
 
   removeManifestEntry(document, "synced/a.md");
-  const emptied = parseManifest(String(document), "sync-manifest.yaml");
+  const emptiedText = stringifyManifest(document);
+
+  assert.equal(emptiedText, "# A header comment that must survive edits.\n");
+
+  const emptied = parseManifest(emptiedText, "sync-manifest.yaml");
 
   assert.deepEqual(emptied.entries, []);
   updateManifestEntry(emptied.document, "synced/b.md", {
@@ -157,7 +162,9 @@ test("updateManifestEntry writes a flow-style manifest back in block style", () 
     String(document),
     `# A header comment that must survive edits.
 
-synced/a.md: { kind: "page", id: "111" }
+synced/a.md:
+  kind: "page"
+  id: "111"
 synced/b.md:
   kind: "page"
   id: "222"
