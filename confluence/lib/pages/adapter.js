@@ -3,7 +3,7 @@ import { createTitledFetchPath } from "../../../shared/slug.js";
 
 const PAGES_PATH = "synced";
 
-const VERSION_MESSAGE = "Synced from markdown via confluence push script";
+const VERSION_MESSAGE = "Synced from markdown by tank";
 
 const ROUND_TRIP_PROBLEM =
   "This markdown doesn't round-trip through Confluence's format: converting it there and back " +

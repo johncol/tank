@@ -28,16 +28,6 @@ function readDatadogConfig() {
   };
 }
 
-/**
- * Thin wrapper around the Datadog API endpoints for dashboards (v1),
- * log-based metrics (v2), synthetic tests (v1), and synthetic suites (v2). Unlike
- * Confluence, Datadog authenticates with two static keys (an API key
- * identifying the org, and an application key identifying the caller's
- * permissions) rather than a per-request token exchange, and its dashboard
- * API has no integer version field for optimistic concurrency -- only a
- * `modified_at` timestamp, which this client's callers use for a purely
- * client-side conflict check.
- */
 /** The synthetic test types whose create and edit endpoints this client
  * supports. */
 const SUPPORTED_TEST_TYPES = ["api", "browser"];
@@ -50,6 +40,16 @@ function assertSupportedTestType(type, verb) {
   }
 }
 
+/**
+ * Thin wrapper around the Datadog API endpoints for dashboards (v1),
+ * log-based metrics (v2), synthetic tests (v1), and synthetic suites (v2). Unlike
+ * Confluence, Datadog authenticates with two static keys (an API key
+ * identifying the org, and an application key identifying the caller's
+ * permissions) rather than a per-request token exchange, and its dashboard
+ * API has no integer version field for optimistic concurrency -- only a
+ * `modified_at` timestamp, which this client's callers use for a purely
+ * client-side conflict check.
+ */
 export class DatadogClient {
   constructor(
     config = readDatadogConfig(),

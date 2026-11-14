@@ -156,9 +156,10 @@ They don't act on artifacts, so they take no action or kind flags (only `--help`
 
 1. Fails if `tank.env` or any tool's manifest already exists. Use `tank upgrade`.
 2. Runs `git init`, unless the folder is already inside a git repo.
-3. Writes `tank.env` (a commented placeholder per domain setting) and `.gitignore` (adds `.env` and `.DS_Store` if missing).
+3. Adds `.env` and `.DS_Store` to `.gitignore` if missing.
 4. Runs the `upgrade` steps.
-5. Commits only the files it created or changed.
+5. Writes `tank.env` (a commented placeholder per domain setting).
+6. Commits only the files it created or changed.
 
 `tank upgrade` runs only at a project root. It adds or refreshes, never deletes:
 

@@ -20,7 +20,7 @@ import { parseKebabCaseName } from "./slug.js";
 import { getErrorMessage, getErrorStatus } from "./error.js";
 
 /**
- * Implements the action contract in _scripts/CONVENTIONS.md once, for every
+ * Implements the action contract in CONVENTIONS.md once, for every
  * kind. Each kind plugs in as an adapter that only knows how to talk to its
  * remote API and how to serialize and place its files; every check, message,
  * manifest write, and result comes from here.

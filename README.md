@@ -75,9 +75,10 @@ mkdir ~/Repos/my-project && cd ~/Repos/my-project && tank init
 
 1. Refuses to run if `tank.env` or any tool's manifest already exists. Use `tank upgrade` instead.
 2. Runs `git init`, unless the folder is already inside a git repo.
-3. Writes `tank.env`, with a commented placeholder for each domain setting, and `.gitignore`, adding `.env` and `.DS_Store` if they're missing.
+3. Adds `.env` and `.DS_Store` to `.gitignore` if they're missing.
 4. Runs the same steps as `tank upgrade`.
-5. Commits only the files it created or changed ("Initialize tank project"). Anything else you staged is left alone.
+5. Writes `tank.env`, with a commented placeholder for each domain setting.
+6. Commits only the files it created or changed ("Initialize tank project"). Anything else you staged is left alone.
 
 ### `tank upgrade`
 
@@ -188,7 +189,7 @@ tank datadog --dashboards --push
 
 - The local edit check compares against `contentHash`.
 - The remote change check compares the live `modified_at` against `remoteVersion`. Unlike Confluence, Datadog's dashboard API has no integer version field and no server-side optimistic concurrency of its own, so this check is purely client-side.
-- The tracked JSON is Datadog's dashboard definition with read-only, server-assigned fields (`id`, `author_handle`, `author_name`, `created_at`, `modified_at`, `url`) stripped out, since those live in the manifest instead.
+- The tracked JSON is Datadog's dashboard definition with read-only, server-assigned fields (`id`, `author_handle`, `author_name`, `created_at`, `modified_at`, `url`, `is_read_only`) stripped out, since those live in the manifest instead.
 - If only `modified_at` moved on, `--pull` updates the manifest entry without rewriting the file.
 
 ### Log-based metrics
