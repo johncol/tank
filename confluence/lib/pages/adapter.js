@@ -49,6 +49,10 @@ function normalizeAdfCommentAttrs(markdown) {
   });
 }
 
+// Strict on purpose, trailing newlines included: Confluence trims them, so a
+// push whose only change is an editor-added newline would have no effect on
+// the page. Failing tells the user nothing would change instead of reporting
+// a push that did nothing. Don't relax this to ignore trailing newlines.
 function isRoundTripSafe(markdown) {
   return (
     normalizeAdfCommentAttrs(adfToMarkdown(markdownToAdf(markdown))) ===
