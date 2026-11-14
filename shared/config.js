@@ -24,12 +24,22 @@ export function getProjectRoot() {
   return process.cwd();
 }
 
+/** @type {Set<string>} */
+const loadedEnvironmentPaths = new Set();
+
 /**
- * Loads the user's credentials file into process.env. Variables already
- * set in the environment win, as with any dotenv file.
+ * Loads the user's credentials file into process.env, once per file, so
+ * only commands that need credentials read it. Variables already set in the
+ * environment win, as with any dotenv file.
+ * @param {string} [envPath] Defaults to the user's credentials file.
  */
-export function loadUserEnvironment() {
-  loadEnvFile({ path: USER_ENV_PATH });
+export function loadUserEnvironment(envPath = USER_ENV_PATH) {
+  if (loadedEnvironmentPaths.has(envPath)) {
+    return;
+  }
+
+  loadedEnvironmentPaths.add(envPath);
+  loadEnvFile({ path: envPath, quiet: true });
 }
 
 /**

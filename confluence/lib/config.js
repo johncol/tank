@@ -4,8 +4,6 @@ import {
   readProjectEnvironment,
 } from "../../shared/config.js";
 
-loadUserEnvironment();
-
 const REQUIRED_ENV_VARS = [
   "CONFLUENCE_BASE_URL",
   "CONFLUENCE_EMAIL",
@@ -38,6 +36,8 @@ export const DOMAIN_VARIABLES = [
  *   spaceId?: string, parentId?: string }}
  */
 export function getConfluenceConfig() {
+  loadUserEnvironment();
+
   const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
 
   if (missing.length > 0) {

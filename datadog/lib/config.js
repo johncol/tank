@@ -1,7 +1,5 @@
 import { USER_ENV_PATH, loadUserEnvironment } from "../../shared/config.js";
 
-loadUserEnvironment();
-
 const REQUIRED_ENV_VARS = [
   "DATADOG_API_KEY",
   "DATADOG_APP_KEY",
@@ -17,6 +15,8 @@ export const DOMAIN_VARIABLES = [];
  * @returns {{ site: string, apiKey: string, appKey: string }}
  */
 export function getDatadogConfig() {
+  loadUserEnvironment();
+
   const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
 
   if (missing.length > 0) {
