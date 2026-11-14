@@ -1,6 +1,5 @@
-import { isPathTracked } from "../../../shared/manifest.js";
 import { markdownToAdf, adfToMarkdown } from "../markdown.js";
-import { buildTitledPath } from "../../../shared/slug.js";
+import { createTitledFetchPath } from "../../../shared/slug.js";
 
 const PAGES_PATH = "synced";
 
@@ -122,20 +121,7 @@ export const pageAdapter = {
     };
   },
 
-  buildFetchPath({ document, id, remote, fileName }) {
-    const buildPath = (name) => `${PAGES_PATH}/${name}.md`;
-
-    if (fileName !== undefined) {
-      return buildPath(fileName);
-    }
-
-    return buildTitledPath({
-      title: remote.title,
-      id,
-      buildPath,
-      isPathTaken: (artifactPath) => isPathTracked(document, artifactPath),
-    });
-  },
+  buildFetchPath: createTitledFetchPath(PAGES_PATH, ".md"),
 
   // Some markdown (e.g. macros serialized as raw ADF JSON, or a code
   // block's "wrap" flag) has no real round-trip support in the parser:

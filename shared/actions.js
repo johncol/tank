@@ -245,13 +245,34 @@ function buildUnsyncedLocalChangesMessage(action) {
   return `Local file has unsynced changes (contentHash mismatch). Push it first, or use --force to ${consequence}.`;
 }
 
+function describeRemoteChange(entry, liveRemoteVersion) {
+  return (
+    `has changed since the last sync (remoteVersion is now ${liveRemoteVersion}, ` +
+    `last synced remoteVersion was ${entry.remoteVersion})`
+  );
+}
+
 function buildRemoteChangedMessage(adapter, entry, liveRemoteVersion, action) {
   const consequence = action === "delete" ? "delete it anyway" : "overwrite it";
 
-  return (
-    `${adapter.label} has changed since the last sync (remoteVersion is now ${liveRemoteVersion}, ` +
-    `last synced remoteVersion was ${entry.remoteVersion}). Pull it first, or use --force to ${consequence}.`
-  );
+  return `${adapter.label} ${describeRemoteChange(entry, liveRemoteVersion)}. Pull it first, or use --force to ${consequence}.`;
+}
+
+function buildInvalidFileNameMessage(fileName, fileNameSuffix) {
+  return `"${fileName}" isn't a valid file name: it must be kebab-case (lowercase letters, digits, and single hyphens), with or without a trailing "${fileNameSuffix}".`;
+}
+
+function buildFailedResults(adapter, action, id, artifactPath, message) {
+  return [
+    buildResult({
+      kind: adapter.kind,
+      id,
+      path: artifactPath,
+      action,
+      status: "failed",
+      message,
+    }),
+  ];
 }
 
 function buildTrackedByAnotherEntryMessage(document, artifactPath) {
@@ -291,16 +312,8 @@ export async function fetchOne(
   { force = false, fileName } = {}
 ) {
   const action = "fetch";
-  const fail = (message, artifactPath) => [
-    buildResult({
-      kind: adapter.kind,
-      id,
-      path: artifactPath,
-      action,
-      status: "failed",
-      message,
-    }),
-  ];
+  const fail = (message, artifactPath) =>
+    buildFailedResults(adapter, action, id, artifactPath, message);
 
   if (!adapter.actions.includes(action)) {
     return [buildUnsupportedResult(adapter, id, undefined, action)];
@@ -317,7 +330,7 @@ export async function fetchOne(
 
     if (parsedFileName === null) {
       return fail(
-        `"${fileName}" isn't a valid file name: it must be kebab-case (lowercase letters, digits, and single hyphens), with or without a trailing "${adapter.fileNameSuffix}".`
+        buildInvalidFileNameMessage(fileName, adapter.fileNameSuffix)
       );
     }
   }
@@ -412,16 +425,8 @@ export async function pullOne(
   { force = false } = {}
 ) {
   const action = "pull";
-  const fail = (message) => [
-    buildResult({
-      kind: adapter.kind,
-      id: entry.id,
-      path: entry.path,
-      action,
-      status: "failed",
-      message,
-    }),
-  ];
+  const fail = (message) =>
+    buildFailedResults(adapter, action, entry.id, entry.path, message);
 
   if (!adapter.actions.includes(action)) {
     return [buildUnsupportedResult(adapter, entry.id, entry.path, action)];
@@ -549,16 +554,8 @@ export async function pushOne(
   { force = false } = {}
 ) {
   const action = "push";
-  const fail = (message) => [
-    buildResult({
-      kind: adapter.kind,
-      id: entry.id,
-      path: entry.path,
-      action,
-      status: "failed",
-      message,
-    }),
-  ];
+  const fail = (message) =>
+    buildFailedResults(adapter, action, entry.id, entry.path, message);
 
   if (!adapter.actions.includes(action)) {
     return [buildUnsupportedResult(adapter, entry.id, entry.path, action)];
@@ -667,10 +664,7 @@ async function checkParentIsSynced(client, { adapter, entry }) {
   const liveRemoteVersion = adapter.describeRemote(liveRemote).remoteVersion;
 
   if (liveRemoteVersion !== entry.remoteVersion) {
-    return (
-      `${adapter.label} ${entry.path} has changed since the last sync (remoteVersion is now ${liveRemoteVersion}, ` +
-      `last synced remoteVersion was ${entry.remoteVersion}). Pull it first.`
-    );
+    return `${adapter.label} ${entry.path} ${describeRemoteChange(entry, liveRemoteVersion)}. Pull it first.`;
   }
 
   return null;
@@ -783,16 +777,8 @@ export async function createOne(
   const action = "create";
   let createdId = id;
   let artifactPath;
-  const fail = (message) => [
-    buildResult({
-      kind: adapter.kind,
-      id: createdId,
-      path: artifactPath,
-      action,
-      status: "failed",
-      message,
-    }),
-  ];
+  const fail = (message) =>
+    buildFailedResults(adapter, action, createdId, artifactPath, message);
 
   if (
     !adapter.actions.includes(action) ||
@@ -827,7 +813,7 @@ export async function createOne(
 
     if (parsedFileName === null) {
       return fail(
-        `"${fileName}" isn't a valid file name: it must be kebab-case (lowercase letters, digits, and single hyphens), with or without a trailing "${adapter.fileNameSuffix}".`
+        buildInvalidFileNameMessage(fileName, adapter.fileNameSuffix)
       );
     }
   }
@@ -1026,16 +1012,8 @@ export async function deleteOne(
   { force = false, parentAdapter } = {}
 ) {
   const action = "delete";
-  const fail = (message) => [
-    buildResult({
-      kind: adapter.kind,
-      id: entry.id,
-      path: entry.path,
-      action,
-      status: "failed",
-      message,
-    }),
-  ];
+  const fail = (message) =>
+    buildFailedResults(adapter, action, entry.id, entry.path, message);
 
   if (!adapter.actions.includes(action) || !adapter.deleteRemote) {
     return [buildUnsupportedResult(adapter, entry.id, entry.path, action)];

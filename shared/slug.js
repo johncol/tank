@@ -1,3 +1,5 @@
+import { isPathTracked } from "./manifest.js";
+
 /**
  * Converts a title into a filesystem-friendly slug, e.g.
  * "Decisions Log" -> "decisions-log".
@@ -36,6 +38,33 @@ export function buildTitledPath({ title, id, buildPath, isPathTaken }) {
   }
 
   return buildPath(`${titleSlug}-${idSlug}`);
+}
+
+/**
+ * Creates an adapter's `buildFetchPath` for artifacts kept as
+ * `<folder>/<name><extension>`: named from the --name file name when given,
+ * or else from the remote's title (see `buildTitledPath`).
+ *
+ * @param {string} folder The manifest-relative folder, e.g. "synced".
+ * @param {string} extension e.g. ".md".
+ * @returns {(context: { document: any, id: string, remote: { title: string },
+ *   fileName?: string }) => string}
+ */
+export function createTitledFetchPath(folder, extension) {
+  const buildPath = (name) => `${folder}/${name}${extension}`;
+
+  return ({ document, id, remote, fileName }) => {
+    if (fileName !== undefined) {
+      return buildPath(fileName);
+    }
+
+    return buildTitledPath({
+      title: remote.title,
+      id,
+      buildPath,
+      isPathTaken: (artifactPath) => isPathTracked(document, artifactPath),
+    });
+  };
 }
 
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;

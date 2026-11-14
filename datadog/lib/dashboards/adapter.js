@@ -1,7 +1,6 @@
-import { isPathTracked } from "../../../shared/manifest.js";
 import { formatJson, omitFields } from "../../../shared/json.js";
 import { READ_ONLY_DASHBOARD_FIELDS } from "./dashboard.js";
-import { buildTitledPath } from "../../../shared/slug.js";
+import { createTitledFetchPath } from "../../../shared/slug.js";
 
 const DASHBOARDS_PATH = "synced/dashboards";
 
@@ -37,20 +36,7 @@ export const dashboardAdapter = {
     };
   },
 
-  buildFetchPath({ document, id, remote, fileName }) {
-    const buildPath = (name) => `${DASHBOARDS_PATH}/${name}.json`;
-
-    if (fileName !== undefined) {
-      return buildPath(fileName);
-    }
-
-    return buildTitledPath({
-      title: remote.title,
-      id,
-      buildPath,
-      isPathTaken: (artifactPath) => isPathTracked(document, artifactPath),
-    });
-  },
+  buildFetchPath: createTitledFetchPath(DASHBOARDS_PATH, ".json"),
 
   async updateRemote(client, entry, content) {
     return client.updateDashboard(entry.id, JSON.parse(content));

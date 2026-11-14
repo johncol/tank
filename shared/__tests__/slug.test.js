@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { slugify, buildTitledPath, parseKebabCaseName } from "../slug.js";
+import { parseDocument } from "yaml";
+import {
+  slugify,
+  buildTitledPath,
+  createTitledFetchPath,
+  parseKebabCaseName,
+} from "../slug.js";
 
 test("slugify lowercases and hyphenates a normal title", () => {
   assert.equal(slugify("Decisions Log"), "decisions-log");
@@ -89,4 +95,23 @@ test("buildTitledPath adds the ID when the title's path is taken", () => {
 
 test("buildTitledPath names the path from the ID when the title has no slug", () => {
   assert.equal(buildDashboardPath("日本語 ✓", []), "dashboards/abc-123.json");
+});
+
+test("createTitledFetchPath names the file from --name, else from the title, adding the ID when the path is taken", () => {
+  const buildFetchPath = createTitledFetchPath("synced", ".md");
+  const document = parseDocument('synced/home.md:\n  id: "1"\n');
+  const remote = { title: "Home" };
+
+  assert.equal(
+    buildFetchPath({ document, id: "2", remote, fileName: "landing" }),
+    "synced/landing.md"
+  );
+  assert.equal(
+    buildFetchPath({ document, id: "2", remote: { title: "About" } }),
+    "synced/about.md"
+  );
+  assert.equal(
+    buildFetchPath({ document, id: "2", remote }),
+    "synced/home-2.md"
+  );
 });
