@@ -66,3 +66,49 @@ test("requestJson exposes the HTTP status on the thrown error", async (t) => {
 
   await assert.rejects(request(), (error) => error.status === 404);
 });
+
+test("requestJson names the request and the underlying cause when the network fails", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => {
+    throw new TypeError("fetch failed", {
+      cause: new Error("getaddrinfo ENOTFOUND example.com"),
+    });
+  });
+
+  await assert.rejects(request(), {
+    message:
+      "Example API GET example.com/api/v2/thing failed: getaddrinfo ENOTFOUND example.com",
+  });
+});
+
+test("requestJson explains a successful response whose body is not JSON", async (t) => {
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async () =>
+      new Response("<html></html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      })
+  );
+
+  await assert.rejects(
+    request(),
+    /Example API GET example\.com\/api\/v2\/thing returned a response that is not JSON \(content-type: text\/html\)\. Check that the Example base URL/
+  );
+});
+
+test("requestJson times out a stuck request", async (t) => {
+  t.mock.method(
+    globalThis,
+    "fetch",
+    (_url, { signal }) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason));
+      })
+  );
+
+  await assert.rejects(request({ timeoutMilliseconds: 10 }), {
+    message:
+      "Example API GET example.com/api/v2/thing failed: timed out after 0.01s",
+  });
+});

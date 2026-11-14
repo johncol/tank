@@ -26,6 +26,13 @@ export function getDatadogConfig() {
     );
   }
 
+  if (/^https?:\/\//i.test(/** @type {string} */ (process.env.DATADOG_SITE))) {
+    throw new Error(
+      `DATADOG_SITE must be a bare domain such as "datadoghq.com", without http:// or https://. ` +
+        `Fix it in ${USER_ENV_PATH}.`
+    );
+  }
+
   return {
     site: /** @type {string} */ (process.env.DATADOG_SITE).replace(/\/+$/, ""),
     apiKey: /** @type {string} */ (process.env.DATADOG_API_KEY),
