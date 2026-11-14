@@ -44,7 +44,9 @@ changes backward compatible with existing projects' files. When a change must
 break them, ship an idempotent migration in `project/migrations.js` and a test
 for it in the same change, so `tank upgrade` fixes every project.
 
-- New tools are registered in `project/tools.js`.
+- New tools are registered in `project/tools.js`, the only place tools are
+  listed: tank's usage text, the managed blocks, and the contract coverage
+  test are built from it.
 - Anything tank writes into projects (manifest headers, the managed blocks in
   `AGENTS.md` and `README.md`, `tank.env` placeholders) changes only through
   `tank upgrade`.

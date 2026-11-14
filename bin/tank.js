@@ -13,15 +13,30 @@ import {
 import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
 
+const USAGE_WIDTH = 80;
+const COMMAND_COLUMN_WIDTH = 14;
+
+const COMMANDS = [
+  {
+    name: "init",
+    description: "Makes the current folder a tank project, and commits it.",
+  },
+  {
+    name: "upgrade",
+    description:
+      "Brings the current project up to date with this version of tank.",
+  },
+  {
+    name: "docs",
+    description: "Prints where tank's README.md and CONVENTIONS.md are.",
+  },
+  ...TOOLS,
+];
+
 const USAGE = `Usage: tank <command> [flags]
 
 Commands:
-  init          Makes the current folder a tank project, and commits it.
-  upgrade       Brings the current project up to date with this version of tank.
-  docs          Prints where tank's README.md and CONVENTIONS.md are.
-  confluence    Syncs Confluence pages.
-  datadog       Syncs Datadog dashboards, log-based metrics, and synthetic
-                tests and suites.
+${COMMANDS.map(formatCommandUsage).join("\n")}
 
 Flags:
   -h, --help    Prints the usage text of tank, or of the command it follows.
@@ -77,4 +92,29 @@ async function runInProjectRoot(runCommand) {
   }
 
   await runCommand(commandArguments);
+}
+
+/**
+ * Formats a command's line in the usage text, wrapping its description
+ * under the description column.
+ * @param {{ name: string, description: string }} command
+ * @returns {string}
+ */
+function formatCommandUsage({ name, description }) {
+  const indent = " ".repeat(2 + COMMAND_COLUMN_WIDTH);
+  const lines = [`  ${name.padEnd(COMMAND_COLUMN_WIDTH)}`];
+
+  for (const word of description.split(" ")) {
+    const lastLine = lines[lines.length - 1];
+    const isLineStart = lastLine.length === indent.length;
+    const candidate = isLineStart ? lastLine + word : `${lastLine} ${word}`;
+
+    if (candidate.length > USAGE_WIDTH && !isLineStart) {
+      lines.push(indent + word);
+    } else {
+      lines[lines.length - 1] = candidate;
+    }
+  }
+
+  return lines.join("\n");
 }

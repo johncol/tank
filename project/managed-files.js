@@ -1,19 +1,27 @@
 import path from "node:path";
 import { USER_ENV_DISPLAY_PATH } from "./project-env.js";
+import { TOOLS } from "./tools.js";
+
+const TOOL_FOLDERS = TOOLS.map((tool) => `\`${tool.name}/\``).join(", ");
+
+const SERVICE_NAMES = new Intl.ListFormat("en", {
+  type: "conjunction",
+}).format(TOOLS.map((tool) => tool.serviceName));
+
+const TOOL_EXAMPLES = TOOLS.flatMap((tool) =>
+  tool.examples.map((example) => `- \`tank ${tool.name} ${example}\``)
+).join("\n");
 
 const AGENTS_BLOCK_CONTENT = `## tank
 
 This folder is a tank project. The artifacts in each tool's folder
-(\`confluence/\`, \`datadog/\`) are synced with Confluence and Datadog by the
+(${TOOL_FOLDERS}) are synced with ${SERVICE_NAMES} by the
 \`tank\` command (on the PATH). Always run it from this folder, the project
 root.
 
 Examples:
 
-- \`tank confluence --pull\`
-- \`tank confluence --push --name=<file>.md\`
-- \`tank datadog --dashboards --pull\`
-- \`tank datadog --log-metrics --fetch --id=<metricId>\`
+${TOOL_EXAMPLES}
 
 Every action and flag is documented in tank's README.md and
 CONVENTIONS.md. Run \`tank docs\` to see where they are.
@@ -29,7 +37,7 @@ CONVENTIONS.md. Run \`tank docs\` to see where they are.
 
 const README_BLOCK_CONTENT = `## Synced artifacts
 
-This repo's artifacts are synced with Confluence and Datadog using tank.
+This repo's artifacts are synced with ${SERVICE_NAMES} using tank.
 See [AGENTS.md](AGENTS.md) for how to run it, and run \`tank docs\` to find
 tank's docs.
 `;

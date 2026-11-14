@@ -20,12 +20,11 @@ import {
   runForEach,
 } from "../actions.js";
 import { listManifestEntries, removeManifestEntry } from "../manifest.js";
-import { KINDS as DATADOG_KINDS } from "../../datadog/lib/kinds.js";
+import { TOOLS } from "../../project/tools.js";
 import { dashboardContractFixture } from "../../datadog/lib/dashboards/__tests__/contract-fixture.js";
 import { logMetricContractFixture } from "../../datadog/lib/log-metrics/__tests__/contract-fixture.js";
 import { syntheticTestContractFixture } from "../../datadog/lib/synthetic-tests/__tests__/contract-fixture.js";
 import { syntheticSuiteContractFixture } from "../../datadog/lib/synthetic-suites/__tests__/contract-fixture.js";
-import { KINDS as CONFLUENCE_KINDS } from "../../confluence/lib/kinds.js";
 import { pageContractFixture } from "../../confluence/lib/pages/__tests__/contract-fixture.js";
 
 /**
@@ -127,13 +126,12 @@ function findEntry(document, id) {
   );
 }
 
-test("every Datadog and Confluence adapter is run through the contract", () => {
+test("every tool's adapter is run through the contract", () => {
   const coveredAdapters = FIXTURES.map((fixture) => fixture.adapter);
 
-  for (const [kind, { adapter }] of [
-    ...Object.entries(DATADOG_KINDS),
-    ...Object.entries(CONFLUENCE_KINDS),
-  ]) {
+  for (const [kind, { adapter }] of TOOLS.flatMap((tool) =>
+    Object.entries(tool.kinds)
+  )) {
     assert.ok(
       coveredAdapters.includes(adapter),
       `${kind} has an adapter but no contract fixture in FIXTURES`
