@@ -43,6 +43,30 @@ export function loadUserEnvironment(envPath = USER_ENV_PATH) {
 }
 
 /**
+ * Reads a tool's credentials from the environment, loading the user's
+ * credentials file first (see `loadUserEnvironment`).
+ * @param {string[]} names The variables the tool needs, all required.
+ * @returns {Record<string, string>} Each variable's value, keyed by name.
+ * @throws {Error} When any of them is missing, naming every missing one.
+ */
+export function readUserVariables(names) {
+  loadUserEnvironment();
+
+  const missingNames = names.filter((name) => !process.env[name]);
+
+  if (missingNames.length > 0) {
+    throw new Error(
+      `Missing required environment variable(s): ${missingNames.join(", ")}. ` +
+        `Add them to ${USER_ENV_PATH} (see .env.example in the tank repo).`
+    );
+  }
+
+  return Object.fromEntries(
+    names.map((name) => [name, /** @type {string} */ (process.env[name])])
+  );
+}
+
+/**
  * Reads the project's tank.env as a plain object. Domain settings are read
  * only from this file, never from the environment or the user's file, so a
  * setting from one project can't leak into another.

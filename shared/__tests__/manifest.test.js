@@ -4,7 +4,6 @@ import { parseDocument } from "yaml";
 import {
   listManifestEntries,
   parseManifest,
-  findEntryByField,
   findEntryById,
   removeManifestEntry,
   stringifyManifest,
@@ -41,20 +40,6 @@ test("listManifestEntries exposes each entry's YAML key as its path", () => {
     entries.map((entry) => entry.path),
     ["synced/a.md", "synced/b.md"]
   );
-});
-
-test("findEntryByField finds the matching entry", () => {
-  const { entries } = loadSampleEntries();
-
-  const entry = findEntryByField(entries, "title", "Doc B");
-
-  assert.equal(entry.path, "synced/b.md");
-});
-
-test("findEntryByField returns undefined when nothing matches", () => {
-  const { entries } = loadSampleEntries();
-
-  assert.equal(findEntryByField(entries, "title", "does-not-exist"), undefined);
 });
 
 test("findEntryById finds the entry of the given kind with the given ID", () => {

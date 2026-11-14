@@ -1,6 +1,34 @@
-import { getConfluenceConfig } from "./config.js";
 import { requestJson } from "../../shared/http.js";
-import { PROJECT_ENV_FILE_NAME } from "../../shared/config.js";
+import {
+  PROJECT_ENV_FILE_NAME,
+  readProjectEnvironment,
+  readUserVariables,
+} from "../../shared/config.js";
+
+/**
+ * Reads and validates the Confluence settings: the connection settings
+ * from the environment (populated from the user's credentials file, see
+ * .env.example), and `spaceId` and `parentId` from the project's tank.env.
+ * Only --create needs those two, so they're checked there, not here.
+ * @returns {{ baseUrl: string, email: string, apiToken: string,
+ *   spaceId?: string, parentId?: string }}
+ */
+function readConfluenceConfig() {
+  const variables = readUserVariables([
+    "CONFLUENCE_BASE_URL",
+    "CONFLUENCE_EMAIL",
+    "CONFLUENCE_API_TOKEN",
+  ]);
+  const projectEnvironment = readProjectEnvironment();
+
+  return {
+    baseUrl: variables.CONFLUENCE_BASE_URL.replace(/\/+$/, ""),
+    email: variables.CONFLUENCE_EMAIL,
+    apiToken: variables.CONFLUENCE_API_TOKEN,
+    spaceId: projectEnvironment.CONFLUENCE_SPACE_ID || undefined,
+    parentId: projectEnvironment.CONFLUENCE_PARENT_ID || undefined,
+  };
+}
 
 /**
  * Thin wrapper around the Confluence Cloud REST API v2 for the single page
@@ -10,7 +38,7 @@ import { PROJECT_ENV_FILE_NAME } from "../../shared/config.js";
  */
 export class ConfluenceClient {
   constructor(
-    config = getConfluenceConfig(),
+    config = readConfluenceConfig(),
     { rateLimitWaitMultiplier = 1 } = {}
   ) {
     this.baseUrl = config.baseUrl;

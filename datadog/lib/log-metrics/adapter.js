@@ -1,4 +1,3 @@
-import { DATADOG_DIR } from "../manifest.js";
 import {
   formatLogMetricJson,
   hashLogMetric,
@@ -19,14 +18,13 @@ function buildLogMetricPath(metricId) {
  * Datadog's log-based metrics API has no modified_at or version field, so
  * `remoteVersion` is a hash of the live definition (see hashLogMetric).
  *
- * @type {import("../../../shared/actions.js").Adapter}
+ * @type {import("../../../shared/actions.js").AdapterDefinition}
  */
 export const logMetricAdapter = {
   kind: "log-metric",
   label: "Datadog log-based metric",
   systemName: "Datadog",
   actions: ["fetch", "pull", "push", "create", "delete"],
-  rootDir: DATADOG_DIR,
   allowsFileName: false,
   usageNote: "Its ID is the metric name.",
 

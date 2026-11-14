@@ -1,4 +1,4 @@
-import { DATADOG_DIR, isPathTracked } from "../manifest.js";
+import { isPathTracked } from "../../../shared/manifest.js";
 import {
   stripReadOnlyDashboardFields,
   formatDashboardJson,
@@ -16,14 +16,13 @@ const DASHBOARDS_PATH = "synced/dashboards";
  * engine's `modified_at` check is the only thing stopping a push from
  * overwriting a dashboard edited in Datadog since the last sync.
  *
- * @type {import("../../../shared/actions.js").Adapter}
+ * @type {import("../../../shared/actions.js").AdapterDefinition}
  */
 export const dashboardAdapter = {
   kind: "dashboard",
   label: "Datadog dashboard",
   systemName: "Datadog",
   actions: ["fetch", "pull", "push"],
-  rootDir: DATADOG_DIR,
   allowsFileName: true,
   usageNote: "Its ID is the dashboard ID.",
   fileNameSuffix: ".json",

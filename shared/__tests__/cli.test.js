@@ -1,5 +1,8 @@
 import { describe, test, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import {
   parseCliArguments,
   selectEntryByName,
@@ -8,8 +11,8 @@ import {
   runCli,
   UsageError,
 } from "../cli.js";
-import { KINDS as DATADOG_KINDS } from "../../datadog/lib/kinds.js";
-import { KINDS as CONFLUENCE_KINDS } from "../../confluence/lib/kinds.js";
+import { datadogTool } from "../../datadog/tool.js";
+import { confluenceTool } from "../../confluence/tool.js";
 import { dashboardAdapter } from "../../datadog/lib/dashboards/adapter.js";
 import { logMetricAdapter } from "../../datadog/lib/log-metrics/adapter.js";
 import { syntheticTestAdapter } from "../../datadog/lib/synthetic-tests/adapter.js";
@@ -17,6 +20,12 @@ import { syntheticSuiteAdapter } from "../../datadog/lib/synthetic-suites/adapte
 import { pageAdapter } from "../../confluence/lib/pages/adapter.js";
 import { parseDocument } from "yaml";
 import { listManifestEntries } from "../manifest.js";
+
+const DATADOG_KINDS = datadogTool.kinds;
+const CONFLUENCE_KINDS = confluenceTool.kinds;
+
+// Never created: these runs fail before writing, or write nothing.
+const MISSING_ROOT_DIR = path.join(os.tmpdir(), "tank-cli-test-missing");
 
 function parseDatadog(argumentsText) {
   return parseCliArguments(argumentsText.split(" "), DATADOG_KINDS);
@@ -351,6 +360,41 @@ describe("runCli", () => {
     mock.method(console, "error", () => {});
   }
 
+  test("runs the adapter in rootDir, on the manifest there", async () => {
+    silenceOutput();
+    const rootDir = await mkdtemp(path.join(os.tmpdir(), "tank-cli-test-"));
+    const manifestPath = path.join(rootDir, "sync-manifest.yaml");
+
+    try {
+      await writeFile(manifestPath, "# Header.\n", "utf8");
+
+      const summary = await runCli({
+        kinds: DATADOG_KINDS,
+        command: "tank test",
+        rootDir,
+        argv: ["--dashboards", "--fetch", "--id=abc-123"],
+        createClient: () => ({
+          getDashboard: async (id) => ({
+            id,
+            title: "Home",
+            modified_at: "2026-01-01T00:00:00.000Z",
+            widgets: [],
+          }),
+        }),
+      });
+
+      assert.equal(summary.ok, true, summary.results[0]?.message);
+      const { path: artifactPath } = summary.results[0];
+      await readFile(path.join(rootDir, artifactPath), "utf8");
+      assert.match(
+        await readFile(manifestPath, "utf8"),
+        new RegExp(`^# Header\\.\\n+${artifactPath}:`)
+      );
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("fails an untracked --name without creating the client", async () => {
     silenceOutput();
     const createClient = mock.fn();
@@ -359,6 +403,7 @@ describe("runCli", () => {
     const summary = await runCli({
       kinds: DATADOG_KINDS,
       command: "tank test",
+      rootDir: MISSING_ROOT_DIR,
       argv: ["--dashboards", "--pull", "--name=unknown"],
       createClient,
       loadManifest: async () => ({ document: null, entries: [] }),
@@ -380,6 +425,7 @@ describe("runCli", () => {
     const summary = await runCli({
       kinds: DATADOG_KINDS,
       command: "tank test",
+      rootDir: MISSING_ROOT_DIR,
       argv: [
         "--synthetic-tests",
         "--create",
@@ -405,6 +451,7 @@ describe("runCli", () => {
     const summary = await runCli({
       kinds: DATADOG_KINDS,
       command: "tank test",
+      rootDir: MISSING_ROOT_DIR,
       argv: ["--dashboards", "--push"],
       createClient: () => ({}),
       loadManifest: async () => ({
@@ -429,6 +476,7 @@ describe("runCli", () => {
     const summary = await runCli({
       kinds: DATADOG_KINDS,
       command: "tank test",
+      rootDir: MISSING_ROOT_DIR,
       argv: ["--dashboards", "--pull"],
       createClient: () => {
         throw new Error("Missing required environment variable(s)");

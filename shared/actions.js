@@ -58,7 +58,8 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  * @property {string} systemName The remote system (e.g. "Datadog").
  * @property {Action[]} actions The actions this kind supports.
  * @property {string} rootDir Absolute folder the manifest paths are
- *   relative to.
+ *   relative to: the tool's folder. Adapters don't declare it: runCli
+ *   (shared/cli.js) adds it (see `AdapterDefinition`).
  * @property {boolean} allowsFileName Whether fetch accepts a file name
  *   instead of deriving it from the title.
  * @property {string} [fileNameSuffix] The suffix a file name may end with
@@ -110,10 +111,10 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  *   matches), printed under the kind flag.
  * @property {PushCheck[]} [pushChecks] Kind-specific push checks, run after
  *   the contract's own checks.
- * @property {(client: any, document: any, remote: any,
+ * @property {(this: Adapter, client: any, document: any, remote: any,
  *   options: { force: boolean }) => Promise<Object[]>} [afterFetch] Fetches
  *   follow-up artifacts and returns their results.
- * @property {(client: any, document: any, remote: any,
+ * @property {(this: Adapter, client: any, document: any, remote: any,
  *   options: { force: boolean }) => Promise<Object[]>} [afterPull] Fetches
  *   follow-up artifacts and returns their results.
  * @property {(context: { client: any, document: any, entry: Object,
@@ -121,6 +122,9 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  *   [deleteFollowUpMessage] A follow-up step to report after a delete.
  *   Called once every delete check has passed, but before the remote, the
  *   file, or the entry is deleted. `remote` is null when only untracking.
+ *
+ * @typedef {Omit<Adapter, "rootDir">} AdapterDefinition An adapter as its
+ *   kind declares it, without `rootDir`, which runCli adds.
  */
 
 /**

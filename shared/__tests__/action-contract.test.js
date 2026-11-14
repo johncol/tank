@@ -47,7 +47,8 @@ import { pageContractFixture } from "../../confluence/lib/pages/__tests__/contra
  *   a child fail once.
  *
  * @typedef {Object} ContractFixture
- * @property {import("../actions.js").Adapter} adapter The real adapter.
+ * @property {import("../actions.js").AdapterDefinition} adapter The real
+ *   adapter.
  * @property {string[]} sampleIds Two remote IDs that land at different paths.
  * @property {() => FakeRemote} createFakeRemote
  * @property {(content: string) => string} editLocalContent Returns a valid,
@@ -56,7 +57,7 @@ import { pageContractFixture } from "../../confluence/lib/pages/__tests__/contra
  *   content of a new local file to create the remote from. Required when
  *   the adapter supports create. When the remote assigns the ID, the same
  *   key as addRemote's must produce a duplicate of that remote.
- * @property {import("../actions.js").Adapter} [parentAdapter] The real
+ * @property {import("../actions.js").AdapterDefinition} [parentAdapter] The real
  *   parent adapter, for adapters with `parent`.
  * @property {string} [parentSampleId] A parent remote ID.
  */

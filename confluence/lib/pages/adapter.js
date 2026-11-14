@@ -1,4 +1,4 @@
-import { CONFLUENCE_DIR, isPathTracked } from "../manifest.js";
+import { isPathTracked } from "../../../shared/manifest.js";
 import { markdownToAdf, adfToMarkdown } from "../markdown.js";
 import { buildTitledPath } from "../../../shared/slug.js";
 
@@ -97,14 +97,13 @@ function splitTitleHeading(markdown) {
  * the page body, so create rewrites the file without it. Pages are created
  * in CONFLUENCE_SPACE_ID, under CONFLUENCE_PARENT_ID.
  *
- * @type {import("../../../shared/actions.js").Adapter}
+ * @type {import("../../../shared/actions.js").AdapterDefinition}
  */
 export const pageAdapter = {
   kind: "page",
   label: "Confluence page",
   systemName: "Confluence",
   actions: ["fetch", "pull", "push", "create"],
-  rootDir: CONFLUENCE_DIR,
   allowsFileName: true,
   fileNameSuffix: ".md",
   assignsIdOnCreate: true,

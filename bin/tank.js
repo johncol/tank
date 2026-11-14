@@ -9,6 +9,7 @@ import {
   isHelpRequest,
   reportHelp,
   reportSummary,
+  runToolCli,
 } from "../shared/cli.js";
 import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
@@ -57,7 +58,7 @@ if (commandName !== undefined && isHelpRequest([commandName])) {
 } else if (commandName === "upgrade") {
   await runInProjectRoot(runUpgrade);
 } else if (tool) {
-  await runInProjectRoot(tool.run);
+  await runInProjectRoot((argv) => runToolCli(tool, argv));
 } else {
   const message = commandName
     ? `Unknown command "${commandName}".`

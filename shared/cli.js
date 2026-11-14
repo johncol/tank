@@ -1,6 +1,14 @@
+import path from "node:path";
 import { parseArgs } from "node:util";
 import * as actions from "./actions.js";
-import { findEntryById, findEntriesByFileName } from "./manifest.js";
+import {
+  MANIFEST_FILE_NAME,
+  findEntryById,
+  findEntriesByFileName,
+  loadManifest as loadManifestFile,
+  saveManifest as saveManifestFile,
+} from "./manifest.js";
+import { getProjectRoot } from "./config.js";
 import { getErrorMessage } from "./error.js";
 
 /**
@@ -14,15 +22,16 @@ import { getErrorMessage } from "./error.js";
  *
  * @typedef {import("./actions.js").Action} Action
  * @typedef {import("./actions.js").Adapter} Adapter
+ * @typedef {import("./actions.js").AdapterDefinition} AdapterDefinition
  *
  * @typedef {Object} KindDefinition
  * @property {string} flag The kind flag, without the leading dashes (e.g.
  *   "dashboards").
- * @property {Adapter} adapter
+ * @property {AdapterDefinition} adapter
  *
  * @typedef {Object} CliOptions
  * @property {Action} action
- * @property {Adapter} adapter
+ * @property {AdapterDefinition} adapter
  * @property {string} [id]
  * @property {string} [name]
  * @property {string} [fileName]
@@ -404,7 +413,7 @@ export function buildUsage({ command, kinds }) {
 /**
  * Describes a kind under its kind flag in the usage text: its actions and
  * how its capabilities change the flags.
- * @param {Adapter} adapter
+ * @param {AdapterDefinition} adapter
  * @param {Object<string, KindDefinition>} kinds
  * @returns {string[]} One paragraph per line of description.
  */
@@ -506,7 +515,7 @@ function formatUsageOption(label, paragraphs) {
  * kind. Uses the adapter's `findEntriesByName` when it has one, and
  * otherwise matches the file name, with or without its extension.
  *
- * @param {Adapter} adapter
+ * @param {AdapterDefinition} adapter
  * @param {Object[]} kindEntries
  * @param {string} name
  * @returns {{ entry: Object | undefined, message?: string }} The entry, or
@@ -565,16 +574,22 @@ export function buildSummary(results, error) {
  * Runs the selected action and returns its results.
  *
  * @param {CliOptions} options
- * @param {{ kinds: Object<string, KindDefinition>, createClient: () => any,
+ * @param {{ kinds: Object<string, KindDefinition>, rootDir: string,
+ *   createClient: () => any,
  *   loadManifest: () => Promise<{ document: any, entries: Object[] }>,
  *   saveManifest: (document: any) => Promise<void> }} tool
  * @returns {Promise<Object[]>}
  */
 async function runAction(options, tool) {
-  const { action, adapter, id, name, fileName, parentName, force } = options;
+  const { action, id, name, fileName, parentName, force } = options;
   const { document, entries } = await tool.loadManifest();
-  const parentAdapter = adapter.parent
-    ? /** @type {Adapter} */ (tool.kinds[adapter.parent.kind]?.adapter)
+  /** @type {Adapter} */
+  const adapter = { ...options.adapter, rootDir: tool.rootDir };
+  const parentDefinition = adapter.parent
+    ? tool.kinds[adapter.parent.kind]?.adapter
+    : undefined;
+  const parentAdapter = parentDefinition
+    ? { ...parentDefinition, rootDir: tool.rootDir }
     : undefined;
   let results;
 
@@ -695,9 +710,12 @@ async function runAction(options, tool) {
  *   for the usage text, which is built from the kinds' capabilities.
  * @param {() => any} tool.createClient Creates the API client. Called only
  *   once the flags are valid, since it reads the credentials.
+ * @param {string} tool.rootDir The tool's folder, holding its manifest.
+ *   Manifest paths are relative to it, so it's given to every adapter.
  * @param {() => Promise<{ document: any, entries: Object[] }>}
- *   tool.loadManifest
- * @param {(document: any) => Promise<void>} tool.saveManifest
+ *   [tool.loadManifest] Defaults to loading the manifest in `rootDir`.
+ * @param {(document: any) => Promise<void>} [tool.saveManifest] Defaults
+ *   to saving the manifest in `rootDir`.
  * @param {string[]} [tool.argv] Defaults to the process's arguments.
  * @returns {Promise<Summary>}
  */
@@ -705,8 +723,10 @@ export async function runCli({
   kinds,
   command,
   createClient,
-  loadManifest,
-  saveManifest,
+  rootDir,
+  loadManifest = () => loadManifestFile(path.join(rootDir, MANIFEST_FILE_NAME)),
+  saveManifest = (document) =>
+    saveManifestFile(document, path.join(rootDir, MANIFEST_FILE_NAME)),
   argv = process.argv.slice(2),
 }) {
   const usage = buildUsage({ command, kinds });
@@ -721,6 +741,7 @@ export async function runCli({
     const options = parseCliArguments(argv, kinds);
     const results = await runAction(options, {
       kinds,
+      rootDir,
       createClient,
       loadManifest,
       saveManifest,
@@ -743,6 +764,23 @@ export async function runCli({
   reportSummary(summary);
 
   return summary;
+}
+
+/**
+ * Runs a registered tool's command (`tank <name>`), on its folder at the
+ * project root and the manifest in it.
+ * @param {import("../project/tools.js").Tool} tool
+ * @param {string[]} argv The arguments after the tool's name.
+ * @returns {Promise<Summary>}
+ */
+export function runToolCli(tool, argv) {
+  return runCli({
+    kinds: tool.kinds,
+    command: `tank ${tool.name}`,
+    createClient: tool.createClient,
+    rootDir: path.join(getProjectRoot(), tool.name),
+    argv,
+  });
 }
 
 /**

@@ -1,5 +1,32 @@
-import { getDatadogConfig } from "./config.js";
 import { requestJson } from "../../shared/http.js";
+import { USER_ENV_PATH, readUserVariables } from "../../shared/config.js";
+
+/**
+ * Reads and validates the Datadog connection settings from the environment
+ * (populated from the user's credentials file, see .env.example). Datadog
+ * has no domain settings: everything it needs is a credential.
+ * @returns {{ site: string, apiKey: string, appKey: string }}
+ */
+function readDatadogConfig() {
+  const variables = readUserVariables([
+    "DATADOG_API_KEY",
+    "DATADOG_APP_KEY",
+    "DATADOG_SITE",
+  ]);
+
+  if (/^https?:\/\//i.test(variables.DATADOG_SITE)) {
+    throw new Error(
+      `DATADOG_SITE must be a bare domain such as "datadoghq.com", without http:// or https://. ` +
+        `Fix it in ${USER_ENV_PATH}.`
+    );
+  }
+
+  return {
+    site: variables.DATADOG_SITE.replace(/\/+$/, ""),
+    apiKey: variables.DATADOG_API_KEY,
+    appKey: variables.DATADOG_APP_KEY,
+  };
+}
 
 /**
  * Thin wrapper around the Datadog API endpoints for dashboards (v1),
@@ -25,7 +52,7 @@ function assertSupportedTestType(type, verb) {
 
 export class DatadogClient {
   constructor(
-    config = getDatadogConfig(),
+    config = readDatadogConfig(),
     { rateLimitWaitMultiplier = 1 } = {}
   ) {
     this.baseUrl = `https://api.${config.site}`;

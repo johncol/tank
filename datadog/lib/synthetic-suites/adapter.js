@@ -1,5 +1,5 @@
 import path from "node:path";
-import { DATADOG_DIR, isPathTracked } from "../manifest.js";
+import { isPathTracked } from "../../../shared/manifest.js";
 import {
   stripReadOnlySuiteFields,
   formatSuiteJson,
@@ -16,14 +16,13 @@ import { fetchUntrackedMemberTests } from "./fetch-member-tests.js";
  * folder. Pushing a suite's `tests` list doesn't move test files locally:
  * pull the affected tests afterwards, and they move to their new folder.
  *
- * @type {import("../../../shared/actions.js").Adapter}
+ * @type {import("../../../shared/actions.js").AdapterDefinition}
  */
 export const syntheticSuiteAdapter = {
   kind: "synthetic-suite",
   label: "Datadog synthetic suite",
   systemName: "Datadog",
   actions: ["fetch", "pull", "push", "delete"],
-  rootDir: DATADOG_DIR,
   allowsFileName: false,
   usageNote:
     "Its ID is the synthetic public ID. --name matches its folder name, with or without a trailing /.",
@@ -65,8 +64,8 @@ export const syntheticSuiteAdapter = {
     await client.deleteSyntheticSuite(id);
   },
 
-  // `this` is the adapter the engine runs, so the tests land in the same
-  // rootDir as the suite.
+  // `this` is the adapter the engine runs, with the rootDir runCli gave it,
+  // so the tests land in the same folder as the suite.
   async afterFetch(client, document, suite) {
     return fetchUntrackedMemberTests(client, document, suite, this.rootDir);
   },

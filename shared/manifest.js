@@ -121,12 +121,6 @@ export function isPathTracked(document, key) {
   return document.has(key);
 }
 
-/** Finds the manifest entry whose given field matches the given value,
- * comparing as strings (so numeric and string lookups both match). */
-export function findEntryByField(entries, fieldName, value) {
-  return entries.find((entry) => String(entry[fieldName]) === String(value));
-}
-
 /** Finds the manifest entry of the given kind (e.g. "dashboard") tracking
  * the given remote ID, comparing IDs as strings (so numeric and string
  * lookups both match). */

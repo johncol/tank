@@ -1,4 +1,7 @@
-import { findEntryById, listManifestEntries } from "../manifest.js";
+import {
+  findEntryById,
+  listManifestEntries,
+} from "../../../shared/manifest.js";
 import { syntheticTestAdapter } from "../synthetic-tests/adapter.js";
 import { fetchOne } from "../../../shared/actions.js";
 

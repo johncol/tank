@@ -1,5 +1,5 @@
 import path from "node:path";
-import { findEntryById } from "../manifest.js";
+import { findEntryById } from "../../../shared/manifest.js";
 import {
   SYNTHETICS_PATH,
   buildSuitePath,

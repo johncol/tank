@@ -1,11 +1,5 @@
-import { runConfluenceCli } from "../confluence/cli.js";
-import { KINDS as CONFLUENCE_KINDS } from "../confluence/lib/kinds.js";
-import { MANIFEST_HEADER as CONFLUENCE_MANIFEST_HEADER } from "../confluence/lib/manifest.js";
-import { DOMAIN_VARIABLES as CONFLUENCE_DOMAIN_VARIABLES } from "../confluence/lib/config.js";
-import { runDatadogCli } from "../datadog/cli.js";
-import { KINDS as DATADOG_KINDS } from "../datadog/lib/kinds.js";
-import { MANIFEST_HEADER as DATADOG_MANIFEST_HEADER } from "../datadog/lib/manifest.js";
-import { DOMAIN_VARIABLES as DATADOG_DOMAIN_VARIABLES } from "../datadog/lib/config.js";
+import { confluenceTool } from "../confluence/tool.js";
+import { datadogTool } from "../datadog/tool.js";
 
 /**
  * A domain setting a tool reads from the project's tank.env.
@@ -23,13 +17,18 @@ import { DOMAIN_VARIABLES as DATADOG_DOMAIN_VARIABLES } from "../datadog/lib/con
  *   text.
  * @property {string[]} examples Arguments of example commands, each run as
  *   "tank <name> <example>", listed in the project's AGENTS.md.
- * @property {Record<string, { flag: string, adapter: any }>} kinds The
- *   tool's kinds registry, from its lib/kinds.js.
+ * @property {Record<string, import("../shared/cli.js").KindDefinition>}
+ *   kinds The tool's kinds, keyed by manifest `kind`: each one's CLI kind
+ *   flag and adapter.
  * @property {string} manifestHeader The comment block tank owns at the top
  *   of the tool's manifest.
  * @property {DomainVariable[]} domainVariables
- * @property {(argv: string[]) => Promise<unknown>} run Runs the tool's
- *   command with the arguments after its name.
+ * @property {() => any} createClient Creates the API client, reading the
+ *   credentials. Called only once the flags are valid.
+ *
+ * Its manifest is `<name>/sync-manifest.yaml` at the project root, and its
+ * manifest paths are relative to `<name>/` (see `runToolCli` in
+ * shared/cli.js).
  */
 
 /**
@@ -40,26 +39,4 @@ import { DOMAIN_VARIABLES as DATADOG_DOMAIN_VARIABLES } from "../datadog/lib/con
  * the action contract's coverage check.
  * @type {Tool[]}
  */
-export const TOOLS = [
-  {
-    name: "confluence",
-    serviceName: "Confluence",
-    description: "Syncs Confluence pages.",
-    examples: ["--pull", "--push --name=<file>.md"],
-    kinds: CONFLUENCE_KINDS,
-    manifestHeader: CONFLUENCE_MANIFEST_HEADER,
-    domainVariables: CONFLUENCE_DOMAIN_VARIABLES,
-    run: runConfluenceCli,
-  },
-  {
-    name: "datadog",
-    serviceName: "Datadog",
-    description:
-      "Syncs Datadog dashboards, log-based metrics, and synthetic tests and suites.",
-    examples: ["--dashboards --pull", "--log-metrics --fetch --id=<metricId>"],
-    kinds: DATADOG_KINDS,
-    manifestHeader: DATADOG_MANIFEST_HEADER,
-    domainVariables: DATADOG_DOMAIN_VARIABLES,
-    run: runDatadogCli,
-  },
-];
+export const TOOLS = [confluenceTool, datadogTool];

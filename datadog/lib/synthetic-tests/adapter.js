@@ -1,9 +1,8 @@
 import path from "node:path";
 import {
-  DATADOG_DIR,
   listManifestEntries,
   isPathTracked,
-} from "../manifest.js";
+} from "../../../shared/manifest.js";
 import {
   stripReadOnlyTestFields,
   findReadOnlyTestFields,
@@ -37,14 +36,13 @@ async function findTestFolder(client, document, testId) {
  * same run. --delete removes the test from its suites first, since Datadog
  * refuses to delete a test that's still in one.
  *
- * @type {import("../../../shared/actions.js").Adapter}
+ * @type {import("../../../shared/actions.js").AdapterDefinition}
  */
 export const syntheticTestAdapter = {
   kind: "synthetic-test",
   label: "Datadog synthetic test",
   systemName: "Datadog",
   actions: ["fetch", "pull", "push", "create", "delete"],
-  rootDir: DATADOG_DIR,
   allowsFileName: false,
   fileNameSuffix: ".json",
   assignsIdOnCreate: true,
