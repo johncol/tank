@@ -4,15 +4,16 @@ import { runInit } from "../project/init.js";
 import { runUpgrade } from "../project/upgrade.js";
 import { assertProjectRoot } from "../project/project-root.js";
 import { TOOLS } from "../project/tools.js";
+import { runToolCli } from "../shared/cli.js";
 import {
   buildSummary,
   isHelpRequest,
   reportHelp,
   reportSummary,
-  runToolCli,
-} from "../shared/cli.js";
+} from "../shared/summary.js";
 import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
+import { wrapText } from "../shared/wrap-text.js";
 
 const USAGE_WIDTH = 80;
 const COMMAND_COLUMN_WIDTH = 14;
@@ -102,20 +103,9 @@ async function runInProjectRoot(runCommand) {
  * @returns {string}
  */
 function formatCommandUsage({ name, description }) {
-  const indent = " ".repeat(2 + COMMAND_COLUMN_WIDTH);
-  const lines = [`  ${name.padEnd(COMMAND_COLUMN_WIDTH)}`];
-
-  for (const word of description.split(" ")) {
-    const lastLine = lines[lines.length - 1];
-    const isLineStart = lastLine.length === indent.length;
-    const candidate = isLineStart ? lastLine + word : `${lastLine} ${word}`;
-
-    if (candidate.length > USAGE_WIDTH && !isLineStart) {
-      lines.push(indent + word);
-    } else {
-      lines[lines.length - 1] = candidate;
-    }
-  }
-
-  return lines.join("\n");
+  return wrapText([description], {
+    firstLine: `  ${name.padEnd(COMMAND_COLUMN_WIDTH)}`,
+    indent: " ".repeat(2 + COMMAND_COLUMN_WIDTH),
+    width: USAGE_WIDTH,
+  });
 }

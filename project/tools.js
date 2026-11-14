@@ -17,7 +17,7 @@ import { datadogTool } from "../datadog/tool.js";
  *   text.
  * @property {string[]} examples Arguments of example commands, each run as
  *   "tank <name> <example>", listed in the project's AGENTS.md.
- * @property {Record<string, import("../shared/cli.js").KindDefinition>}
+ * @property {Record<string, import("../shared/cli-arguments.js").KindDefinition>}
  *   kinds The tool's kinds, keyed by manifest `kind`: each one's CLI kind
  *   flag and adapter.
  * @property {string} manifestHeader The comment block tank owns at the top

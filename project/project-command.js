@@ -1,10 +1,10 @@
+import { UsageError } from "../shared/cli-arguments.js";
 import {
-  UsageError,
   buildSummary,
   isHelpRequest,
   reportHelp,
   reportSummary,
-} from "../shared/cli.js";
+} from "../shared/summary.js";
 import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
 
@@ -21,7 +21,7 @@ import { getErrorMessage } from "../shared/error.js";
  * @param {(rootDir: string, results: Object[]) => Promise<unknown>}
  *   command.run Runs the command, pushing each result into `results` as it
  *   goes.
- * @returns {Promise<import("../shared/cli.js").Summary>}
+ * @returns {Promise<import("../shared/summary.js").Summary>}
  */
 export async function runProjectCommand({ argv, usage, run }) {
   if (isHelpRequest(argv)) {
