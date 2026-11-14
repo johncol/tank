@@ -88,7 +88,6 @@ const INVALID_COMMANDS = [
     ["--synthetic-suites", "--create", "--file-name=a"],
     "--create on synthetic suites",
   ],
-  ["confluence", ["--delete", "--id=1"], "--delete on Confluence"],
 ];
 
 describe("CLI smoke tests (invalid flags)", () => {

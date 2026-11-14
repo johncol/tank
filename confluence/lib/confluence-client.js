@@ -144,6 +144,12 @@ export class ConfluenceClient {
       },
     });
   }
+
+  /** Moves a page to the space's trash, where it can be restored. It's not
+   * purged. Its child pages aren't deleted. */
+  async deletePage(pageId) {
+    await this.request(`/pages/${pageId}`, { method: "DELETE" });
+  }
 }
 
 /**

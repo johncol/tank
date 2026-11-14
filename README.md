@@ -122,7 +122,7 @@ Both tools share the same actions and flags, and the same command-line runner. D
 | `--pull`   | pages      | every kind                      |
 | `--push`   | pages      | every kind                      |
 | `--create` | pages      | every kind but synthetic suites |
-| `--delete` | —          | every kind                      |
+| `--delete` | pages      | every kind                      |
 
 Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked artifact, `--name` (its file name). Leave both out of `--pull`/`--push` to run on everything tracked in the manifest. `--delete` always needs one. `--file-name` names a new file on `--fetch` (pages, dashboards, and monitors only) and on `--create` (pages, dashboards, monitors, and synthetic tests only). See `CONVENTIONS.md` for every flag rule.
 
@@ -175,6 +175,17 @@ tank confluence --create --file-name=<kebab-case-name>
 - Start the file with the page title as a `# ` heading on its first line. It becomes the page title and is left out of the page body, so `--create` rewrites the file without it (the title is kept in the manifest, like for every other page).
 - The page is created in `CONFLUENCE_SPACE_ID`, under `CONFLUENCE_PARENT_ID`. Both come from the project's `tank.env`, and both are required.
 - `--create` refuses to run if the path is already tracked, if the file doesn't exist or doesn't start with a `# ` heading, if a page with the same title already exists in the space (use `--fetch` instead), or if the body doesn't round-trip through Confluence's format. `--force` isn't supported.
+
+Pages can also be deleted, by `--id` or `--name`:
+
+```bash
+# Delete a page in Confluence, then its markdown file and manifest entry
+tank confluence --delete --id=<confluencePageId>
+```
+
+- Deleting moves the page to the space's trash, where a space admin can restore it. tank never purges it.
+- Confluence doesn't delete the page's child pages. Per Atlassian's docs, they move up to the deleted page's parent.
+- `--delete` refuses to run if the local file has unpushed changes, if the page changed in Confluence since the last sync, or if the page no longer exists in Confluence. `--force` overrides all three; for a page that no longer exists, it only removes the local file and manifest entry.
 
 ## Datadog
 

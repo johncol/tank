@@ -153,11 +153,4 @@ describe("parseCliArguments", () => {
       );
     });
   }
-
-  test("rejects an action the single Confluence kind doesn't support", () => {
-    assert.throws(
-      () => parseConfluence("--delete --id=1"),
-      /--delete isn't supported with --pages/
-    );
-  });
 });

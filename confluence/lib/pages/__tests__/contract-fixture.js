@@ -98,6 +98,10 @@ export const pageContractFixture = {
           delete created.body;
           return created;
         },
+        async deletePage(id) {
+          getExisting(id);
+          pages.delete(id);
+        },
       },
       addRemote(id) {
         storePage(id, {

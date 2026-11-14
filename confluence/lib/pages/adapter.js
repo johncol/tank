@@ -102,7 +102,7 @@ export const pageAdapter = {
   kind: "page",
   label: "Confluence page",
   systemName: "Confluence",
-  actions: ["fetch", "pull", "push", "create"],
+  actions: ["fetch", "pull", "push", "create", "delete"],
   allowsFileName: true,
   fileNameSuffix: ".md",
   assignsIdOnCreate: true,
@@ -178,5 +178,9 @@ export const pageAdapter = {
 
   getCreatedId(page) {
     return page.id;
+  },
+
+  async deleteRemote(client, id) {
+    await client.deletePage(id);
   },
 };
