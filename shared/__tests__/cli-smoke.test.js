@@ -110,6 +110,7 @@ const HELP_COMMANDS = [
   [["datadog", "--dashboards", "--pull", "--help"], "Usage: tank datadog"],
   [["init", "--help"], "Usage: tank init"],
   [["upgrade", "--help"], "Usage: tank upgrade"],
+  [["docs", "--help"], "Usage: tank docs"],
 ];
 
 describe("CLI smoke tests (--help)", () => {
@@ -137,6 +138,39 @@ describe("CLI smoke tests (--help)", () => {
 });
 
 describe("CLI smoke tests (outside a project root)", () => {
+  test("tank docs prints the paths of tank's docs outside a project", async () => {
+    const emptyDir = await mkdtemp(path.join(os.tmpdir(), "tank-smoke-"));
+    const tankRootPath = path.resolve(path.dirname(TANK_BIN_PATH), "..");
+    const docPaths = [
+      path.join(tankRootPath, "README.md"),
+      path.join(tankRootPath, "CONVENTIONS.md"),
+    ];
+
+    try {
+      const { exitCode, stdout, stderr } = runTool("docs", [], emptyDir);
+      const summary = JSON.parse(stdout);
+
+      assert.equal(exitCode, 0);
+      assert.equal(summary.ok, true);
+      assert.deepEqual(
+        summary.results.map((result) => result.path),
+        docPaths
+      );
+      assert.equal(stderr, `${docPaths.join("\n")}\n`);
+    } finally {
+      await rm(emptyDir, { recursive: true, force: true });
+    }
+  });
+
+  test("tank docs rejects an argument", () => {
+    const { exitCode, stdout, stderr } = runTool("docs", ["--verbose"]);
+    const summary = JSON.parse(stdout);
+
+    assert.equal(exitCode, 1);
+    assert.equal(summary.ok, false);
+    assert.match(stderr, /Usage: tank docs/);
+  });
+
   test("a tool command refuses to run without tank.env", async () => {
     const emptyDir = await mkdtemp(path.join(os.tmpdir(), "tank-smoke-"));
 

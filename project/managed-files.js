@@ -1,12 +1,5 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { USER_ENV_DISPLAY_PATH } from "./project-env.js";
-import { formatPathFromHome } from "./project-file.js";
-
-/** Where this copy of tank lives, so a project's docs can point at it. */
-const TANK_REPO_DISPLAY_PATH = formatPathFromHome(
-  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-);
 
 const AGENTS_BLOCK_CONTENT = `## tank
 
@@ -22,9 +15,8 @@ Examples:
 - \`tank datadog --dashboards --pull\`
 - \`tank datadog --log-metrics --fetch --id=<metricId>\`
 
-Every action and flag is documented in the tank README
-(\`${TANK_REPO_DISPLAY_PATH}/README.md\`) and in
-\`${TANK_REPO_DISPLAY_PATH}/CONVENTIONS.md\`.
+Every action and flag is documented in tank's README.md and
+CONVENTIONS.md. Run \`tank docs\` to see where they are.
 
 - Never edit a \`sync-manifest.yaml\` by hand.
 - tank owns the manifest headers and this block: \`tank upgrade\` rewrites
@@ -37,9 +29,9 @@ Every action and flag is documented in the tank README
 
 const README_BLOCK_CONTENT = `## Synced artifacts
 
-This repo's artifacts are synced with Confluence and Datadog using tank
-(\`${TANK_REPO_DISPLAY_PATH}/README.md\`). See [AGENTS.md](AGENTS.md) for
-how to run it.
+This repo's artifacts are synced with Confluence and Datadog using tank.
+See [AGENTS.md](AGENTS.md) for how to run it, and run \`tank docs\` to find
+tank's docs.
 `;
 
 /**

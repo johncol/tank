@@ -82,6 +82,21 @@ test("upgrade replaces the managed block in place, keeping the content around it
   assert.doesNotMatch(content, /Outdated/);
 });
 
+test("upgrade replaces a block that names tank's local path with one pointing at tank docs", async () => {
+  const oldBlock = `${MANAGED_BLOCK_START}\n## Synced artifacts\n\nSynced using tank (\`~/ReposJohn/tank/README.md\`).\n${MANAGED_BLOCK_END}\n`;
+  await writeFile(
+    path.join(rootDir, "README.md"),
+    `# Mine\n\n${oldBlock}`,
+    "utf8"
+  );
+
+  await upgradeProject(rootDir);
+
+  const content = await readProjectFile("README.md");
+  assert.doesNotMatch(content, /ReposJohn/);
+  assert.match(content, /`tank docs`/);
+});
+
 test("upgrade appends the managed block after a blank line when the file has no markers", async () => {
   await writeFile(path.join(rootDir, "README.md"), "# Mine\n", "utf8");
 

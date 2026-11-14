@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { runDocs } from "../project/docs.js";
 import { runInit } from "../project/init.js";
 import { runUpgrade } from "../project/upgrade.js";
 import { assertProjectRoot } from "../project/project-root.js";
@@ -17,6 +18,7 @@ const USAGE = `Usage: tank <command> [flags]
 Commands:
   init          Makes the current folder a tank project, and commits it.
   upgrade       Brings the current project up to date with this version of tank.
+  docs          Prints where tank's README.md and CONVENTIONS.md are.
   confluence    Syncs Confluence pages.
   datadog       Syncs Datadog dashboards, log-based metrics, and synthetic
                 tests and suites.
@@ -24,7 +26,8 @@ Commands:
 Flags:
   -h, --help    Prints the usage text of tank, or of the command it follows.
 
-Run every command from the project root (the folder with tank.env). Run
+Run every command but init and docs from the project root (the folder with
+tank.env). Run
 "tank <command> --help" to see a command's usage.`;
 
 const [commandName, ...commandArguments] = process.argv.slice(2);
@@ -34,6 +37,8 @@ if (commandName !== undefined && isHelpRequest([commandName])) {
   reportHelp(USAGE);
 } else if (commandName === "init") {
   await runInit(commandArguments);
+} else if (commandName === "docs") {
+  await runDocs(commandArguments);
 } else if (commandName === "upgrade") {
   await runInProjectRoot(runUpgrade);
 } else if (tool) {

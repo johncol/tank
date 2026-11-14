@@ -3,8 +3,8 @@
 `tank` keeps local files in sync with Confluence pages and Datadog artifacts (dashboards, log-based metrics, synthetic tests and suites). It works on a **project**: a folder that holds the synced files, their manifests, and the project's settings, usually in its own git repo. It's named after the Matrix operator who loads programs in and pulls the crew out: push and pull.
 
 ```
-bin/tank.js    # the "tank" command: dispatches init, upgrade, confluence, datadog
-project/       # init and upgrade, the tools registry (tools.js), the project root check
+bin/tank.js    # the "tank" command: dispatches init, upgrade, docs, confluence, datadog
+project/       # init, upgrade, and docs, the tools registry (tools.js), the project root check
 shared/        # code used by both tools (runCli, actions, manifest, config, ...)
 confluence/    # Confluence sync tool
 datadog/       # Datadog sync tool
@@ -54,7 +54,7 @@ datadog/
   synced/              # JSON files synced with Datadog artifacts
 ```
 
-The project root is always the current folder: tank never searches parent folders. Every command except `tank init` refuses to run in a folder without a `tank.env` ("Not a tank project", on stderr and in the summary), so running from inside `confluence/` can't nest artifacts there.
+The project root is always the current folder: tank never searches parent folders. Every command except `tank init` and `tank docs` refuses to run in a folder without a `tank.env` ("Not a tank project", on stderr and in the summary), so running from inside `confluence/` can't nest artifacts there.
 
 ### `tank.env`
 
@@ -92,7 +92,13 @@ Brings the current project up to date with this working copy of tank. It adds or
 
 There's no list of projects, so `tank upgrade` only runs on the current one. Run it in each project when you next work there.
 
-Both commands print one JSON summary, like the sync commands. The sync commands (`tank confluence`, `tank datadog`) never touch git, and `tank upgrade` never commits: only `tank init` does.
+### `tank docs`
+
+Prints where this working copy of tank keeps its docs: the absolute paths of `README.md` and `CONVENTIONS.md`, one per line on stderr. It works anywhere, even outside a project, and never reads credentials. Like every command, it also prints one JSON summary to stdout, with one result per doc holding its `path`.
+
+The `AGENTS.md` and `README.md` blocks tell readers to run `tank docs` instead of naming tank's folder, since each teammate may have tank checked out somewhere else.
+
+`tank init` and `tank upgrade` print one JSON summary, like the sync commands. The sync commands (`tank confluence`, `tank datadog`) never touch git, and `tank upgrade` never commits: only `tank init` does.
 
 ## Commands at a glance
 

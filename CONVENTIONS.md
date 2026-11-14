@@ -123,16 +123,16 @@ Every run prints exactly one JSON summary to stdout, and exits 0 when every resu
 
 Every result has the same fields:
 
-| Field           | Holds                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| `kind`          | The artifact's kind.                                                                       |
-| `id`            | The remote ID, when known.                                                                 |
-| `path`          | The local path, when known.                                                                |
-| `action`        | `fetch`, `pull`, `push`, `create`, or `delete` (`init` or `upgrade` for project commands). |
-| `status`        | `success`, `skipped` (nothing needed to change), or `failed`.                              |
-| `remoteVersion` | The `remoteVersion` now tracked, when known.                                               |
-| `message`       | Why it failed, or a follow-up step the user should take (e.g. pull a suite's tests).       |
-| `movedFrom`     | The previous path, only when a pull moved the file.                                        |
+| Field           | Holds                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| `kind`          | The artifact's kind.                                                                                |
+| `id`            | The remote ID, when known.                                                                          |
+| `path`          | The local path, when known.                                                                         |
+| `action`        | `fetch`, `pull`, `push`, `create`, or `delete` (`init`, `upgrade`, or `docs` for project commands). |
+| `status`        | `success`, `skipped` (nothing needed to change), or `failed`.                                       |
+| `remoteVersion` | The `remoteVersion` now tracked, when known.                                                        |
+| `message`       | Why it failed, or a follow-up step the user should take (e.g. pull a suite's tests).                |
+| `movedFrom`     | The previous path, only when a pull moved the file.                                                 |
 
 An action returns its own artifact's result first, followed by one result for every other artifact it fetched or updated along the way.
 
@@ -147,9 +147,9 @@ Declared in the kind's adapter, and covered by the contract tests:
 - Kind-specific checks, each marked forceable or not.
 - Follow-up artifacts (a suite fetching its untracked tests) and follow-up messages (a suite delete asking to pull its tests).
 
-## Project commands: `init` and `upgrade`
+## Project commands: `init`, `upgrade`, and `docs`
 
-They act on the project, not on artifacts, so they take no action or kind flags (only `--help`). They print the same JSON summary, with one result per file they check (`skipped` when it needed no change), one per migration that ran, and, for `init`, one per git step (without a `path`). Each holds `path`, `action` (`init` or `upgrade`), `status`, and, when useful, `message`.
+They don't act on artifacts, so they take no action or kind flags (only `--help`). They print the same JSON summary, with one result per file they check (`skipped` when it needed no change), one per migration that ran, and, for `init`, one per git step (without a `path`). Each holds `path`, `action` (`init` or `upgrade`), `status`, and, when useful, `message`.
 
 `tank init`:
 
@@ -167,5 +167,7 @@ They act on the project, not on artifacts, so they take no action or kind flags 
 4. Appends commented placeholders for new domain settings to `tank.env`.
 
 Only `init` touches git. Sync commands and `upgrade` never do.
+
+`tank docs` runs anywhere and never reads credentials. It prints the absolute paths of this working copy's `README.md` and `CONVENTIONS.md` to stderr, one per line, and the same JSON summary to stdout, with one `success` result per doc holding its `path`. The managed blocks point at `tank docs` rather than at tank's folder, so they read the same for everyone.
 
 Every project runs the working copy of tank, so changes must stay backward compatible with existing projects' files. A change that must break them ships, in the same change, an idempotent migration in `project/migrations.js` with a test. Each migration detects for itself whether it applies: no version is stored in the project. Sync commands that meet the old format fail and ask to run `tank upgrade`.
