@@ -6,6 +6,7 @@ import {
   parseManifest,
   findEntryByField,
   findEntryById,
+  removeManifestEntry,
   updateManifestEntry,
 } from "../manifest.js";
 
@@ -114,6 +115,54 @@ test("updateManifestEntry auto-vivifies a brand-new entry", () => {
   assert.equal(result["synced/c.md"].title, "Doc C");
   assert.equal(result["synced/c.md"].id, "333");
   assert.equal(result["synced/c.md"].remoteVersion, 1);
+});
+
+test("removing the last entry, then adding one, keeps the manifest in block style", () => {
+  const document = parseDocument(`# A header comment that must survive edits.
+
+synced/a.md:
+  kind: "page"
+  id: "111"
+`);
+
+  removeManifestEntry(document, "synced/a.md");
+  const emptied = parseManifest(String(document), "sync-manifest.yaml");
+
+  assert.deepEqual(emptied.entries, []);
+  updateManifestEntry(emptied.document, "synced/b.md", {
+    kind: "page",
+    id: "222",
+  });
+
+  assert.equal(
+    String(emptied.document),
+    `# A header comment that must survive edits.
+
+synced/b.md:
+  kind: "page"
+  id: "222"
+`
+  );
+});
+
+test("updateManifestEntry writes a flow-style manifest back in block style", () => {
+  const document = parseDocument(`# A header comment that must survive edits.
+
+{ synced/a.md: { kind: "page", id: "111" } }
+`);
+
+  updateManifestEntry(document, "synced/b.md", { kind: "page", id: "222" });
+
+  assert.equal(
+    String(document),
+    `# A header comment that must survive edits.
+
+synced/a.md: { kind: "page", id: "111" }
+synced/b.md:
+  kind: "page"
+  id: "222"
+`
+  );
 });
 
 test("parseManifest parses a valid manifest", () => {

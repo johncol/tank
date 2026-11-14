@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { parseDocument, Scalar } from "yaml";
+import { isMap, parseDocument, Scalar } from "yaml";
 
 /** Every tool's manifest, in the tool's folder at the project root. */
 export const MANIFEST_FILE_NAME = "sync-manifest.yaml";
@@ -66,6 +66,17 @@ export async function saveManifest(document, manifestPath) {
  * ambiguity with another YAML type).
  */
 export function updateManifestEntry(document, key, patch) {
+  // An emptied manifest is saved as `null` (see `removeManifestEntry`).
+  if (!isMap(document.contents)) {
+    document.contents = document.createNode({});
+  }
+
+  // Manifests saved as a flow map (`{ ... }`) by older versions go back to
+  // block style, one entry field per line.
+  if (document.contents.flow) {
+    document.contents.flow = false;
+  }
+
   for (const [field, value] of Object.entries(patch)) {
     if (typeof value === "string") {
       const scalar = new Scalar(value);
@@ -81,6 +92,12 @@ export function updateManifestEntry(document, key, patch) {
  * entry's top-level YAML key). */
 export function removeManifestEntry(document, key) {
   document.delete(key);
+
+  // An empty map saves as `{}`, and entries added to it later would stay in
+  // flow style, so the whole manifest would be written on one line.
+  if (isMap(document.contents) && document.contents.items.length === 0) {
+    document.contents = null;
+  }
 }
 
 /** Returns whether an entry in the manifest document is keyed by `key`
