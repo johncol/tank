@@ -1,4 +1,4 @@
-import { slugify } from "../../../shared/slug.js";
+import { buildTitledPath } from "../../../shared/slug.js";
 
 /** Root folder for synthetic suites and tests. Each suite gets its own
  * folder, holding the suite definition and the tests that belong to it. */
@@ -45,8 +45,16 @@ export function formatSuiteJson(suite) {
   return `${JSON.stringify(suite, null, 2)}\n`;
 }
 
-/** Builds the folder for a suite from its name, e.g. "S: Latency test suite
- * in homepage" -> "synced/synthetics/s-latency-test-suite-in-homepage". */
-export function buildSuiteFolder(suiteName) {
-  return `${SYNTHETICS_PATH}/${slugify(suiteName)}`;
+/** Builds the path a suite is fetched into, in a folder named from its
+ * name, e.g. "S: Latency test suite in homepage" ->
+ * "synced/synthetics/s-latency-test-suite-in-homepage/_suite.json". The
+ * folder also gets the suite's ID when the name has no slug or its path is
+ * taken (see buildTitledPath). */
+export function buildSuitePath(suiteName, suiteId, isPathTaken) {
+  return buildTitledPath({
+    title: suiteName,
+    id: suiteId,
+    buildPath: (name) => `${SYNTHETICS_PATH}/${name}/${SUITE_FILE_NAME}`,
+    isPathTaken,
+  });
 }

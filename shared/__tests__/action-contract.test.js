@@ -40,6 +40,8 @@ import { pageContractFixture } from "../../confluence/lib/pages/__tests__/contra
  *   remoteVersion. Leave out for kinds whose remoteVersion is a hash of the
  *   content.
  * @property {(id: string) => void} removeRemote Deletes it, so it 404s.
+ * @property {(id: string, title: string) => void} [renameRemote] Sets its
+ *   title. Required when the adapter names fetched files from the title.
  * @property {{ addRemote: (id: string) => void, changeRemote: (id: string)
  *   => void, failNextUpdate: () => void }} [parent] The fake parent
  *   remote, for adapters with `parent`. `failNextUpdate` makes adding
@@ -142,6 +144,7 @@ test("every Datadog and Confluence adapter is run through the contract", () => {
 for (const fixture of FIXTURES) {
   const { kind, actions } = fixture.adapter;
   const [firstId, secondId] = fixture.sampleIds;
+  const namesFilesFromTitle = Boolean(fixture.createFakeRemote().renameRemote);
 
   describe(`action contract: ${kind}`, () => {
     let adapter;
@@ -242,26 +245,36 @@ for (const fixture of FIXTURES) {
           assert.equal(await readFile(resolve(entry.path), "utf8"), before);
         });
 
-        test("fails, even with --force, when another entry tracks the path", async () => {
-          const entry = await track(firstId);
-          await rm(resolve(entry.path));
-          const otherDocument = parseDocument(
-            `${JSON.stringify(entry.path)}:\n  kind: "${kind}"\n  id: "${secondId}"\n`
-          );
+        // A path named from the title moves aside instead (see the test
+        // below), so only an explicit file name can land on a tracked path.
+        const fileNameCanCollide =
+          !namesFilesFromTitle || fixture.adapter.allowsFileName;
 
-          const [result] = await call(fetchOne, otherDocument, firstId, {
-            force: true,
+        if (fileNameCanCollide) {
+          test("fails, even with --force, when another entry tracks the path", async () => {
+            const entry = await track(firstId);
+            await rm(resolve(entry.path));
+            const otherDocument = parseDocument(
+              `${JSON.stringify(entry.path)}:\n  kind: "${kind}"\n  id: "${secondId}"\n`
+            );
+
+            const [result] = await call(fetchOne, otherDocument, firstId, {
+              force: true,
+              fileName: namesFilesFromTitle
+                ? path.posix.basename(entry.path)
+                : undefined,
+            });
+
+            assert.equal(result.status, "failed");
+            assert.match(result.message, /already tracked by another entry/);
+            assert.equal(
+              String(findEntry(otherDocument, secondId).path),
+              entry.path
+            );
+            assert.equal(findEntry(otherDocument, firstId), undefined);
+            assert.equal(await exists(resolve(entry.path)), false);
           });
-
-          assert.equal(result.status, "failed");
-          assert.match(result.message, /already tracked by another entry/);
-          assert.equal(
-            String(findEntry(otherDocument, secondId).path),
-            entry.path
-          );
-          assert.equal(findEntry(otherDocument, firstId), undefined);
-          assert.equal(await exists(resolve(entry.path)), false);
-        });
+        }
 
         test("fails when an untracked file exists at the path; --force overwrites it", async () => {
           const entry = await track(firstId);
@@ -295,6 +308,47 @@ for (const fixture of FIXTURES) {
           assert.equal(result.status, "failed");
           assert.equal(findEntry(document, firstId), undefined);
         });
+
+        if (namesFilesFromTitle) {
+          test("adds the ID to the path when another entry's title has the same slug", async () => {
+            fake.addRemote(firstId);
+            fake.addRemote(secondId);
+            fake.renameRemote(firstId, "Homepage - US");
+            fake.renameRemote(secondId, "Homepage (US)");
+
+            const [first] = await call(fetchOne, document, firstId);
+            const [second] = await call(fetchOne, document, secondId);
+
+            assert.equal(first.status, "success", first.message);
+            assert.equal(second.status, "success", second.message);
+            assert.match(first.path, /\/homepage-us[/.]/);
+            assert.equal(
+              second.path,
+              first.path.replace("homepage-us", `homepage-us-${secondId}`)
+            );
+
+            const [pulled] = await call(
+              pullOne,
+              document,
+              findEntry(document, secondId)
+            );
+
+            assert.notEqual(pulled.status, "failed", pulled.message);
+            assert.equal(pulled.path, second.path);
+            assert.equal(findEntry(document, secondId).path, second.path);
+          });
+
+          test("names the path from the ID when the title has no slug", async () => {
+            fake.addRemote(firstId);
+            fake.renameRemote(firstId, "日本語 ✓");
+
+            const [result] = await call(fetchOne, document, firstId);
+
+            assert.equal(result.status, "success", result.message);
+            assert.ok(result.path.includes(`/${firstId}`), result.path);
+            assert.doesNotMatch(result.path, /\/\.|\/\//);
+          });
+        }
 
         if (fixture.adapter.allowsFileName) {
           test("names the file from a kebab-case file name, with or without its suffix", async () => {

@@ -118,7 +118,7 @@ async function trackAndEditLocally(fake, content) {
 test("pageAdapter names a fetched file from the page title", () => {
   const artifactPath = pageAdapter.buildFetchPath({
     client: null,
-    document: null,
+    document: parseDocument("{}"),
     id: PAGE_ID,
     remote: { title: "Dynamic Rendering: Overview" },
   });

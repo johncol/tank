@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { parseDocument } from "yaml";
 import { dashboardAdapter } from "../adapter.js";
 
 test("dashboardAdapter names a fetched file from the dashboard title", () => {
   const artifactPath = dashboardAdapter.buildFetchPath({
     client: null,
-    document: null,
+    document: parseDocument("{}"),
     id: "abc-def-123",
     remote: { title: "Dynamic Rendering: Overview" },
   });

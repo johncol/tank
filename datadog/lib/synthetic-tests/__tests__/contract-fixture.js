@@ -141,6 +141,9 @@ export const syntheticTestContractFixture = {
       touchRemote(id) {
         tests.set(id, { ...getExisting(id), modified_at: nextModifiedAt() });
       },
+      renameRemote(id, name) {
+        tests.set(id, { ...getExisting(id), name });
+      },
       removeRemote(id) {
         tests.delete(id);
       },

@@ -1,9 +1,9 @@
-import { DATADOG_DIR } from "../manifest.js";
+import { DATADOG_DIR, isPathTracked } from "../manifest.js";
 import {
   stripReadOnlyDashboardFields,
   formatDashboardJson,
 } from "./dashboard.js";
-import { slugify } from "../../../shared/slug.js";
+import { buildTitledPath } from "../../../shared/slug.js";
 
 const DASHBOARDS_PATH = "synced/dashboards";
 
@@ -39,8 +39,19 @@ export const dashboardAdapter = {
     };
   },
 
-  buildFetchPath({ remote, fileName }) {
-    return `${DASHBOARDS_PATH}/${fileName ?? slugify(remote.title)}.json`;
+  buildFetchPath({ document, id, remote, fileName }) {
+    const buildPath = (name) => `${DASHBOARDS_PATH}/${name}.json`;
+
+    if (fileName !== undefined) {
+      return buildPath(fileName);
+    }
+
+    return buildTitledPath({
+      title: remote.title,
+      id,
+      buildPath,
+      isPathTaken: (artifactPath) => isPathTracked(document, artifactPath),
+    });
   },
 
   async updateRemote(client, entry, content) {

@@ -1,6 +1,6 @@
-import { CONFLUENCE_DIR } from "../manifest.js";
+import { CONFLUENCE_DIR, isPathTracked } from "../manifest.js";
 import { markdownToAdf, adfToMarkdown } from "../markdown.js";
-import { slugify } from "../../../shared/slug.js";
+import { buildTitledPath } from "../../../shared/slug.js";
 
 const PAGES_PATH = "synced";
 
@@ -121,8 +121,19 @@ export const pageAdapter = {
     };
   },
 
-  buildFetchPath({ remote, fileName }) {
-    return `${PAGES_PATH}/${fileName ?? slugify(remote.title)}.md`;
+  buildFetchPath({ document, id, remote, fileName }) {
+    const buildPath = (name) => `${PAGES_PATH}/${name}.md`;
+
+    if (fileName !== undefined) {
+      return buildPath(fileName);
+    }
+
+    return buildTitledPath({
+      title: remote.title,
+      id,
+      buildPath,
+      isPathTaken: (artifactPath) => isPathTracked(document, artifactPath),
+    });
   },
 
   // Some markdown (e.g. macros serialized as raw ADF JSON, or a code

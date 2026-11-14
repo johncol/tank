@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { slugify, parseKebabCaseName } from "../slug.js";
+import { slugify, buildTitledPath, parseKebabCaseName } from "../slug.js";
 
 test("slugify lowercases and hyphenates a normal title", () => {
   assert.equal(slugify("Decisions Log"), "decisions-log");
@@ -62,4 +62,31 @@ test("parseKebabCaseName rejects an empty name, with or without its extension", 
 
 test("parseKebabCaseName rejects an extension other than the expected one", () => {
   assert.equal(parseKebabCaseName("decisions-log.txt", ".md"), null);
+});
+
+function buildDashboardPath(title, trackedPaths) {
+  return buildTitledPath({
+    title,
+    id: "Abc-123",
+    buildPath: (name) => `dashboards/${name}.json`,
+    isPathTaken: (artifactPath) => trackedPaths.includes(artifactPath),
+  });
+}
+
+test("buildTitledPath names the path from the title when it's free", () => {
+  assert.equal(
+    buildDashboardPath("Homepage (US)", ["dashboards/other.json"]),
+    "dashboards/homepage-us.json"
+  );
+});
+
+test("buildTitledPath adds the ID when the title's path is taken", () => {
+  assert.equal(
+    buildDashboardPath("Homepage (US)", ["dashboards/homepage-us.json"]),
+    "dashboards/homepage-us-abc-123.json"
+  );
+});
+
+test("buildTitledPath names the path from the ID when the title has no slug", () => {
+  assert.equal(buildDashboardPath("日本語 ✓", []), "dashboards/abc-123.json");
 });

@@ -49,6 +49,7 @@ function createFakeDatadog(testIds) {
       modified_at: "2026-01-01T00:00:00.000Z",
     },
     fetchedTestIds: [],
+    testNames: {},
     client: {
       async getSyntheticSuite() {
         return structuredClone(fake.suite);
@@ -57,7 +58,7 @@ function createFakeDatadog(testIds) {
         fake.fetchedTestIds.push(testId);
         return {
           public_id: testId,
-          name: `Test ${testId}`,
+          name: fake.testNames[testId] ?? `Test ${testId}`,
           type: "api",
           modified_at: "2026-01-01T00:00:00.000Z",
         };
@@ -156,6 +157,43 @@ test("pull fetches tests added to the suite in Datadog, and leaves tracked ones 
 
   assert.equal(skipped.status, "skipped");
   assert.deepEqual(followUps, [], "already-tracked tests aren't refetched");
+});
+
+test("pull fetches same-named tests side by side, so the next pull has none left to fetch", async () => {
+  const fake = createFakeDatadog([]);
+  await fetchOne(adapter, fake.client, document, SUITE_ID);
+  fake.suite.tests = [{ public_id: "ttt-one" }, { public_id: "ttt-two" }];
+  fake.testNames = { "ttt-one": "Homepage - US", "ttt-two": "Homepage (US)" };
+  const findSuiteEntry = () =>
+    listManifestEntries(document).find((entry) => entry.id === SUITE_ID);
+
+  const results = await pullOne(
+    adapter,
+    fake.client,
+    document,
+    findSuiteEntry()
+  );
+
+  assert.deepEqual(summarize(results), [
+    ["synthetic-suite", SUITE_PATH, "pull", "success"],
+    ["synthetic-test", `${SUITE_FOLDER}/homepage-us.json`, "fetch", "success"],
+    [
+      "synthetic-test",
+      `${SUITE_FOLDER}/homepage-us-ttt-two.json`,
+      "fetch",
+      "success",
+    ],
+  ]);
+
+  const [skipped, ...followUps] = await pullOne(
+    adapter,
+    fake.client,
+    document,
+    findSuiteEntry()
+  );
+
+  assert.equal(skipped.status, "skipped");
+  assert.deepEqual(followUps, []);
 });
 
 test("delete notes that the suite's tests weren't deleted", async () => {

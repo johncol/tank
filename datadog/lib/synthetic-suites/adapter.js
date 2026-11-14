@@ -1,10 +1,9 @@
 import path from "node:path";
-import { DATADOG_DIR } from "../manifest.js";
+import { DATADOG_DIR, isPathTracked } from "../manifest.js";
 import {
   stripReadOnlySuiteFields,
   formatSuiteJson,
-  buildSuiteFolder,
-  SUITE_FILE_NAME,
+  buildSuitePath,
 } from "./synthetic-suite.js";
 import { fetchUntrackedMemberTests } from "./fetch-member-tests.js";
 
@@ -50,8 +49,10 @@ export const syntheticSuiteAdapter = {
     };
   },
 
-  buildFetchPath({ remote }) {
-    return `${buildSuiteFolder(remote.name)}/${SUITE_FILE_NAME}`;
+  buildFetchPath({ document, id, remote }) {
+    return buildSuitePath(remote.name, id, (artifactPath) =>
+      isPathTracked(document, artifactPath)
+    );
   },
 
   async updateRemote(client, entry, content) {

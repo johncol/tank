@@ -1,5 +1,9 @@
 import path from "node:path";
-import { DATADOG_DIR, listManifestEntries } from "../manifest.js";
+import {
+  DATADOG_DIR,
+  listManifestEntries,
+  isPathTracked,
+} from "../manifest.js";
 import {
   stripReadOnlyTestFields,
   findReadOnlyTestFields,
@@ -8,7 +12,7 @@ import {
   NO_SUITE_FOLDER,
 } from "./synthetic-test.js";
 import { stripReadOnlySuiteFields } from "../synthetic-suites/synthetic-suite.js";
-import { slugify } from "../../../shared/slug.js";
+import { buildTitledPath } from "../../../shared/slug.js";
 
 async function findTestFolder(client, document, testId) {
   const parentSuites = await client.getSyntheticTestParentSuites(testId);
@@ -60,7 +64,12 @@ export const syntheticTestAdapter = {
   async buildFetchPath({ client, document, id, remote }) {
     const folder = await findTestFolder(client, document, id);
 
-    return `${folder}/${slugify(remote.name)}.json`;
+    return buildTitledPath({
+      title: remote.name,
+      id,
+      buildPath: (name) => `${folder}/${name}.json`,
+      isPathTaken: (artifactPath) => isPathTracked(document, artifactPath),
+    });
   },
 
   async buildPullPath({ client, document, entry }) {

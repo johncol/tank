@@ -54,6 +54,8 @@ Checks run in the order listed. The first failing check stops the action, before
 
 ### `--fetch`: start tracking an existing remote artifact
 
+A path named from the title (`--file-name` left out) uses the title's slug, e.g. `homepage-us.json`. If the slug is empty, the path uses the remote ID instead (`abc-123.json`). If another entry already tracks the slug's path, the path adds the ID (`homepage-us-abc-123.json`). A tracked artifact keeps its path, so this only names new files. An explicit `--file-name` is never changed: it fails at step 2.
+
 1. Fails if the ID is already tracked. Use `--pull`.
 2. Fails if the target path is tracked by another entry.
 3. Fails if the target path exists but isn't tracked. _Forceable._

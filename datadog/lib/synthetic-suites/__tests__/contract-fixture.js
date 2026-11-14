@@ -76,6 +76,9 @@ export const syntheticSuiteContractFixture = {
       touchRemote(id) {
         suites.set(id, { ...getExisting(id), modified_at: nextModifiedAt() });
       },
+      renameRemote(id, name) {
+        suites.set(id, { ...getExisting(id), name });
+      },
       removeRemote(id) {
         suites.delete(id);
       },

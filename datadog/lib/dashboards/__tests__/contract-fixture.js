@@ -74,6 +74,9 @@ export const dashboardContractFixture = {
           modified_at: nextModifiedAt(),
         });
       },
+      renameRemote(id, title) {
+        dashboards.set(id, { ...getExisting(id), title });
+      },
       removeRemote(id) {
         dashboards.delete(id);
       },

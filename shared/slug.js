@@ -9,6 +9,35 @@ export function slugify(title) {
     .replace(/^-+|-+$/g, "");
 }
 
+/**
+ * Builds the path a new artifact is fetched into from its title, e.g.
+ * "Homepage (US)" -> `buildPath("homepage-us")`. The remote ID keeps the
+ * path unique when the title's slug is empty (`buildPath("abc-123")`) or its
+ * path is taken by another artifact (`buildPath("homepage-us-abc-123")`).
+ * Only for new paths: a tracked artifact keeps the path it has.
+ *
+ * @param {{ title: string, id: string | number,
+ *   buildPath: (name: string) => string,
+ *   isPathTaken: (artifactPath: string) => boolean }} options
+ * @returns {string}
+ */
+export function buildTitledPath({ title, id, buildPath, isPathTaken }) {
+  const titleSlug = slugify(title);
+  const idSlug = slugify(String(id));
+
+  if (titleSlug === "") {
+    return buildPath(idSlug);
+  }
+
+  const titledPath = buildPath(titleSlug);
+
+  if (!isPathTaken(titledPath)) {
+    return titledPath;
+  }
+
+  return buildPath(`${titleSlug}-${idSlug}`);
+}
+
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /**

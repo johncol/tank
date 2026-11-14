@@ -127,6 +127,9 @@ export const pageContractFixture = {
           version: { number: existing.version.number + 1 },
         });
       },
+      renameRemote(id, title) {
+        pages.set(id, { ...getExisting(id), title });
+      },
       removeRemote(id) {
         pages.delete(id);
       },

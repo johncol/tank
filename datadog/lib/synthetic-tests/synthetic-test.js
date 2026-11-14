@@ -2,7 +2,7 @@ import path from "node:path";
 import { findEntryById } from "../manifest.js";
 import {
   SYNTHETICS_PATH,
-  buildSuiteFolder,
+  buildSuitePath,
 } from "../synthetic-suites/synthetic-suite.js";
 
 /** Folder for tests that don't belong to any suite. Slugified suite names
@@ -78,5 +78,11 @@ export function resolveTestFolder(entries, parentSuites) {
     return path.posix.dirname(suiteEntry.path);
   }
 
-  return buildSuiteFolder(parentSuite.name);
+  const suitePath = buildSuitePath(
+    parentSuite.name,
+    parentSuite.public_id,
+    (artifactPath) => entries.some((entry) => entry.path === artifactPath)
+  );
+
+  return path.posix.dirname(suitePath);
 }

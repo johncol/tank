@@ -74,7 +74,9 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  * @property {(context: { client: any, document: any, id: string, remote: any,
  *   fileName?: string }) => string | Promise<string>} buildFetchPath Returns
  *   the manifest-relative path to fetch into. `fileName` is the validated
- *   file name without its suffix, when given.
+ *   file name without its suffix, when given. A path named from the title
+ *   goes through `buildTitledPath` (shared/slug.js), which adds the ID
+ *   when the slug is empty or its path is taken.
  * @property {(context: { client: any, document: any, entry: Object,
  *   remote: any }) => string | Promise<string>} [buildPullPath] Returns the
  *   path the entry belongs at now. Defaults to the entry's current path.
