@@ -470,6 +470,33 @@ describe("runCli", () => {
     assert.equal(process.exitCode, 1);
   });
 
+  test("asks to run tank upgrade when the tool's manifest is missing, without creating the client", async () => {
+    silenceOutput();
+    const rootDir = await mkdtemp(path.join(os.tmpdir(), "tank-cli-test-"));
+    const toolDir = path.join(rootDir, "datadog");
+    const createClient = mock.fn();
+
+    try {
+      const summary = await runCli({
+        kinds: DATADOG_KINDS,
+        command: "tank test",
+        rootDir: toolDir,
+        argv: ["--dashboards", "--pull"],
+        createClient,
+      });
+
+      assert.equal(summary.ok, false);
+      assert.equal(
+        summary.error,
+        'datadog/sync-manifest.yaml is missing. Run "tank upgrade" to create it, then run this command again.'
+      );
+      assert.equal(createClient.mock.callCount(), 0);
+      assert.equal(process.exitCode, 1);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("reports an unexpected error in the summary", async () => {
     silenceOutput();
 

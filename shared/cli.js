@@ -74,6 +74,37 @@ export class UsageError extends Error {
   }
 }
 
+/** The tool's manifest doesn't exist, e.g. in a project initialized before
+ * the tool was added to tank. Its message is reported without a stack. */
+class MissingManifestError extends Error {
+  /** @param {string} rootDir The tool's folder. */
+  constructor(rootDir) {
+    const manifestPath = `${path.basename(rootDir)}/${MANIFEST_FILE_NAME}`;
+
+    super(
+      `${manifestPath} is missing. Run "tank upgrade" to create it, then run this command again.`
+    );
+    this.name = "MissingManifestError";
+  }
+}
+
+/**
+ * Loads the manifest in the tool's folder.
+ * @param {string} rootDir The tool's folder.
+ * @throws {MissingManifestError} When the manifest doesn't exist.
+ */
+async function loadToolManifest(rootDir) {
+  try {
+    return await loadManifestFile(path.join(rootDir, MANIFEST_FILE_NAME));
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code === "ENOENT") {
+      throw new MissingManifestError(rootDir);
+    }
+
+    throw error;
+  }
+}
+
 /** The manifest couldn't be saved after the action ran. Carries the
  * action's results, since their remote writes already happened. */
 class ManifestSaveError extends Error {
@@ -724,7 +755,7 @@ export async function runCli({
   command,
   createClient,
   rootDir,
-  loadManifest = () => loadManifestFile(path.join(rootDir, MANIFEST_FILE_NAME)),
+  loadManifest = () => loadToolManifest(rootDir),
   saveManifest = (document) =>
     saveManifestFile(document, path.join(rootDir, MANIFEST_FILE_NAME)),
   argv = process.argv.slice(2),
@@ -751,6 +782,8 @@ export async function runCli({
   } catch (error) {
     if (error instanceof UsageError) {
       console.error(`${error.message}\n\n${usage}`);
+    } else if (error instanceof MissingManifestError) {
+      console.error(error.message);
     } else {
       console.error(error);
     }

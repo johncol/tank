@@ -34,6 +34,7 @@ Only tank writes the manifest. Editing an entry by hand changes nothing remotely
 
 - `--help` (or `-h`) prints the command's usage text to stderr and a successful empty summary to stdout, and exits 0, whatever else is passed. It works for `tank` itself and every command, outside a project root too, and never touches the manifest, the credentials, or the network.
 - Tool commands run only at a project root. That's checked before anything else, flags included (except `--help`): a folder without a `tank.env`, or a `tank.env` that sets anything but the tools' domain settings, fails the run, with the reason on stderr.
+- A tool whose manifest is missing (e.g. in a project initialized before the tool was added to tank) fails the run, asking to run `tank upgrade`, before the credentials or the network are touched.
 - Exactly one action flag per run (`--fetch`, `--pull`, `--push`, `--create`, `--delete`). An action the kind's adapter doesn't support is rejected.
 - A tool with several kinds (Datadog) takes exactly one kind flag (`--dashboards`, `--log-metrics`, `--synthetic-tests`, `--synthetic-suites`), so an omitted flag never defaults to a kind. A tool with a single kind (Confluence) doesn't need one: `--pages` is accepted but optional.
 - `--id=<remoteId>` picks an artifact by its remote ID. Required by `--fetch`, and by `--create` for kinds whose ID you choose (`log-metric`). Rejected by `--create` for kinds whose ID the remote assigns (`synthetic-test`, `page`: their adapters set `assignsIdOnCreate`).
