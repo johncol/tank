@@ -42,7 +42,8 @@ function assertSupportedTestType(type, verb) {
 
 /**
  * Thin wrapper around the Datadog API endpoints for dashboards (v1),
- * log-based metrics (v2), synthetic tests (v1), and synthetic suites (v2). Unlike
+ * log-based metrics (v2), monitors (v1), synthetic tests (v1), and synthetic
+ * suites (v2). Unlike
  * Confluence, Datadog authenticates with two static keys (an API key
  * identifying the org, and an application key identifying the caller's
  * permissions) rather than a per-request token exchange, and its dashboard
@@ -158,6 +159,54 @@ export class DatadogClient {
       method: "DELETE",
       apiVersion: "v2",
     });
+  }
+
+  /** Fetches a monitor's full definition, including read-only fields like
+   * `id`, `creator`, and `modified`, and its live `overall_state`. */
+  async getMonitor(monitorId) {
+    return this.request(`/monitor/${monitorId}`);
+  }
+
+  /** Overwrites a monitor with the given definition. Like dashboards, there's
+   * no server-side optimistic concurrency check. The response holds the new
+   * `modified`, but not the same fields as getMonitor (e.g. no `creator`). */
+  async updateMonitor(monitorId, monitor) {
+    return this.request(`/monitor/${monitorId}`, {
+      method: "PUT",
+      body: monitor,
+    });
+  }
+
+  /** Lists the monitors whose name contains `name` (Datadog matches part of
+   * the name, ignoring case), one page at a time. */
+  async listMonitorsByName(name) {
+    const pageSize = 100;
+    const monitors = [];
+
+    for (let pageNumber = 0; ; pageNumber += 1) {
+      const page = await this.request(
+        `/monitor?name=${encodeURIComponent(name)}&page_size=${pageSize}&page=${pageNumber}`
+      );
+
+      monitors.push(...page);
+
+      if (page.length < pageSize) {
+        return monitors;
+      }
+    }
+  }
+
+  /** Creates a monitor from the given definition and returns it, with the
+   * `id` Datadog assigned. Like updateMonitor, the response's fields differ
+   * from getMonitor's. */
+  async createMonitor(monitor) {
+    return this.request("/monitor", { method: "POST", body: monitor });
+  }
+
+  /** Deletes a monitor. Datadog refuses if other resources (e.g. SLOs or
+   * composite monitors) still depend on it. */
+  async deleteMonitor(monitorId) {
+    await this.request(`/monitor/${monitorId}`, { method: "DELETE" });
   }
 
   /** Fetches a synthetic test's full definition (any type), including

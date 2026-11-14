@@ -23,6 +23,7 @@ import { listManifestEntries, removeManifestEntry } from "../manifest.js";
 import { TOOLS } from "../../project/tools.js";
 import { dashboardContractFixture } from "../../datadog/lib/dashboards/__tests__/contract-fixture.js";
 import { logMetricContractFixture } from "../../datadog/lib/log-metrics/__tests__/contract-fixture.js";
+import { monitorContractFixture } from "../../datadog/lib/monitors/__tests__/contract-fixture.js";
 import { syntheticTestContractFixture } from "../../datadog/lib/synthetic-tests/__tests__/contract-fixture.js";
 import { syntheticSuiteContractFixture } from "../../datadog/lib/synthetic-suites/__tests__/contract-fixture.js";
 import { pageContractFixture } from "../../confluence/lib/pages/__tests__/contract-fixture.js";
@@ -66,6 +67,7 @@ import { pageContractFixture } from "../../confluence/lib/pages/__tests__/contra
 const FIXTURES = [
   dashboardContractFixture,
   logMetricContractFixture,
+  monitorContractFixture,
   syntheticTestContractFixture,
   syntheticSuiteContractFixture,
   pageContractFixture,

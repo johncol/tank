@@ -9,7 +9,7 @@ New actions, flags, or kinds must follow this contract and update it first if it
 - **Project**: a folder with a `tank.env` (its domain settings) and one folder per tool, each holding the tool's `sync-manifest.yaml` and synced files.
 - **Project root**: the folder tank runs from. Always the current folder: tank never searches parent folders.
 - **Tool**: `confluence` or `datadog`, each registered in `project/tools.js`.
-- **Kind**: what an artifact is: `page` (Confluence), `dashboard`, `log-metric`, `synthetic-test`, `synthetic-suite` (Datadog).
+- **Kind**: what an artifact is: `page` (Confluence), `dashboard`, `log-metric`, `monitor`, `synthetic-test`, `synthetic-suite` (Datadog).
 - **Artifact**: one remote object (a page, a dashboard, ...) and its local file.
 - **Entry**: an artifact's record in its tool's `sync-manifest.yaml`. An artifact is **tracked** once it has an entry.
 
@@ -17,14 +17,14 @@ New actions, flags, or kinds must follow this contract and update it first if it
 
 Every entry has the same fields, keyed by the local file's path (relative to the tool's folder):
 
-| Field           | Holds                                                                                                                                                                |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`          | The artifact's kind.                                                                                                                                                 |
-| `id`            | The remote ID (Confluence page ID, Datadog public ID or metric name).                                                                                                |
-| `title`         | The remote title or name, for humans. Refreshed on every sync. Never pushed.                                                                                         |
-| `remoteVersion` | What the remote-change check compares: Confluence's version number, Datadog's `modified_at`, or (for log metrics, which have neither) a hash of the live definition. |
-| `contentHash`   | Hash of the local file at the last sync.                                                                                                                             |
-| `lastSyncedAt`  | When a sync last changed the file or the remote. A no-op never bumps it.                                                                                             |
+| Field           | Holds                                                                                                                                                                                          |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`          | The artifact's kind.                                                                                                                                                                           |
+| `id`            | The remote ID (Confluence page ID, Datadog public ID, monitor ID, or metric name).                                                                                                             |
+| `title`         | The remote title or name, for humans. Refreshed on every sync. Never pushed.                                                                                                                   |
+| `remoteVersion` | What the remote-change check compares: Confluence's version number, Datadog's `modified_at` (`modified` for monitors), or (for log metrics, which have neither) a hash of the live definition. |
+| `contentHash`   | Hash of the local file at the last sync.                                                                                                                                                       |
+| `lastSyncedAt`  | When a sync last changed the file or the remote. A no-op never bumps it.                                                                                                                       |
 
 Only tank writes the manifest. Editing an entry by hand changes nothing remotely. Tank also owns the manifest's header comments: `tank upgrade` rewrites them, never the entries.
 
@@ -36,11 +36,11 @@ Only tank writes the manifest. Editing an entry by hand changes nothing remotely
 - Tool commands run only at a project root. That's checked before anything else, flags included (except `--help`): a folder without a `tank.env`, or a `tank.env` that sets anything but the tools' domain settings, fails the run, with the reason on stderr.
 - A tool whose manifest is missing (e.g. in a project initialized before the tool was added to tank) fails the run, asking to run `tank upgrade`, before the credentials or the network are touched.
 - Exactly one action flag per run (`--fetch`, `--pull`, `--push`, `--create`, `--delete`). An action the kind's adapter doesn't support is rejected.
-- A tool with several kinds (Datadog) takes exactly one kind flag (`--dashboards`, `--log-metrics`, `--synthetic-tests`, `--synthetic-suites`), so an omitted flag never defaults to a kind. A tool with a single kind (Confluence) doesn't need one: `--pages` is accepted but optional.
-- `--id=<remoteId>` picks an artifact by its remote ID. Required by `--fetch`, and by `--create` for kinds whose ID you choose (`log-metric`). Rejected by `--create` for kinds whose ID the remote assigns (`synthetic-test`, `page`: their adapters set `assignsIdOnCreate`).
+- A tool with several kinds (Datadog) takes exactly one kind flag (`--dashboards`, `--log-metrics`, `--monitors`, `--synthetic-tests`, `--synthetic-suites`), so an omitted flag never defaults to a kind. A tool with a single kind (Confluence) doesn't need one: `--pages` is accepted but optional.
+- `--id=<remoteId>` picks an artifact by its remote ID. Required by `--fetch`, and by `--create` for kinds whose ID you choose (`log-metric`). Rejected by `--create` for kinds whose ID the remote assigns (`monitor`, `synthetic-test`, `page`: their adapters set `assignsIdOnCreate`).
 - `--name=<name>` picks a **tracked** artifact, with `--pull`, `--push`, and `--delete` only. It never names a new file. By default it's the file name, with or without its extension (a log metric's file name is its metric ID). A kind may match differently through its adapter's `findEntriesByName`: a synthetic suite matches its folder name, with or without a trailing `/`. A name matching more than one entry (e.g. synthetic tests in different suite folders) fails and lists their paths; one matching none fails too.
 - `--file-name=<kebab-case-name>` names the new file, with or without its extension:
-  - with `--fetch`, for kinds whose adapter sets `allowsFileName` (`page`, `dashboard`);
+  - with `--fetch`, for kinds whose adapter sets `allowsFileName` (`page`, `dashboard`, `monitor`);
   - with `--create`, for kinds whose adapter sets `assignsIdOnCreate`, where it's required, since there's no ID to derive the file name from.
 
   Other kinds and actions reject it.
@@ -88,7 +88,7 @@ The local file's path comes from `--id` (kinds whose ID you choose) or from `--f
 1. Fails if the ID is already tracked, or the path is tracked by another entry. Use `--push`.
 2. Fails if the local file is missing.
 3. With a parent: fails if the parent's local file has unpushed changes, or the parent remote is missing or changed since the last sync. Pull or push it first.
-4. Fails if the remote artifact already exists. Use `--fetch`. For kinds whose ID the remote assigns, "already exists" means a remote artifact with the same title, read from the local file (a synthetic test's `name`, a page's leading `# ` heading), since there's no ID to look up.
+4. Fails if the remote artifact already exists. Use `--fetch`. For kinds whose ID the remote assigns, "already exists" means a remote artifact with the same title, read from the local file (a synthetic test's or monitor's `name`, a page's leading `# ` heading), since there's no ID to look up.
 5. Creates the remote, rewrites the file with what the remote returned, and adds the entry.
 6. With a parent: adds the new artifact to the parent remote, then rewrites the parent's file and entry from what the remote returned, as a pull would. Returns a second result for the parent. If this step fails, the new artifact stays created and tracked, and the parent's result fails with how to finish by hand.
 
@@ -161,6 +161,7 @@ They don't act on artifacts, so they take no action or kind flags (only `--help`
 4. Runs the `upgrade` steps.
 5. Writes `tank.env` (a commented placeholder per domain setting).
 6. Commits only the files it created or changed.
+7. Prints a banner to stderr when every step succeeded (green on a color terminal, plain otherwise).
 
 `tank upgrade` runs only at a project root. It adds or refreshes, never deletes:
 

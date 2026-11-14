@@ -1,6 +1,6 @@
 # tank
 
-`tank` keeps local files in sync with Confluence pages and Datadog artifacts (dashboards, log-based metrics, synthetic tests and suites). It works on a **project**: a folder that holds the synced files, their manifests, and the project's settings, usually in its own git repo. It's named after the Matrix operator who loads programs in and pulls the crew out: push and pull.
+`tank` keeps local files in sync with Confluence pages and Datadog artifacts (dashboards, log-based metrics, monitors, synthetic tests and suites). It works on a **project**: a folder that holds the synced files, their manifests, and the project's settings, usually in its own git repo. It's named after the Matrix operator who loads programs in and pulls the crew out: push and pull.
 
 ```
 bin/tank.js    # the "tank" command: dispatches init, upgrade, docs, confluence, datadog
@@ -36,7 +36,7 @@ CONVENTIONS.md # the contract every action, flag, and kind follows
    Fill it in. It's shared by every project and never committed. Variables already set in the environment win over it.
 
    - Confluence: `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN` (create a token at https://id.atlassian.com/manage-profile/security/api-tokens).
-   - Datadog: `DATADOG_API_KEY`, `DATADOG_APP_KEY` (scoped to `dashboards_read`, `dashboards_write`, `logs_read_config`, `logs_generate_metrics`, `synthetics_read`, and `synthetics_write`), and `DATADOG_SITE` (e.g. `datadoghq.com`, or `us5.datadoghq.com`).
+   - Datadog: `DATADOG_API_KEY`, `DATADOG_APP_KEY` (scoped to `dashboards_read`, `dashboards_write`, `logs_read_config`, `logs_generate_metrics`, `monitors_read`, `monitors_write`, `synthetics_read`, and `synthetics_write`), and `DATADOG_SITE` (e.g. `datadoghq.com`, or `us5.datadoghq.com`).
 
    The Confluence URL and Datadog site live here, next to the credentials, because each token only works with its own site.
 
@@ -79,6 +79,7 @@ mkdir ~/Repos/my-project && cd ~/Repos/my-project && tank init
 4. Runs the same steps as `tank upgrade`.
 5. Writes `tank.env`, with a commented placeholder for each domain setting.
 6. Commits only the files it created or changed ("Initialize tank project"). Anything else you staged is left alone.
+7. Prints a Matrix-green banner to stderr when every step succeeded (plain text when stderr isn't a color terminal, or `NO_COLOR` is set).
 
 ### `tank upgrade`
 
@@ -113,17 +114,17 @@ The `AGENTS.md` and `README.md` blocks tell readers to run `tank docs` instead o
 
 ## Commands at a glance
 
-Both tools share the same actions and flags, and the same command-line runner. Datadog also needs a kind flag on every call (`--dashboards`, `--log-metrics`, `--synthetic-tests`, or `--synthetic-suites`), so an omitted flag never silently defaults to one kind. Confluence only has pages, so it doesn't need one (`--pages` is accepted but optional).
+Both tools share the same actions and flags, and the same command-line runner. Datadog also needs a kind flag on every call (`--dashboards`, `--log-metrics`, `--monitors`, `--synthetic-tests`, or `--synthetic-suites`), so an omitted flag never silently defaults to one kind. Confluence only has pages, so it doesn't need one (`--pages` is accepted but optional).
 
-| Action     | Confluence | Datadog                                   |
-| ---------- | ---------- | ----------------------------------------- |
-| `--fetch`  | pages      | every kind                                |
-| `--pull`   | pages      | every kind                                |
-| `--push`   | pages      | every kind                                |
-| `--create` | pages      | log-based metrics, synthetic tests        |
-| `--delete` | —          | log-based metrics, synthetic tests/suites |
+| Action     | Confluence | Datadog                                             |
+| ---------- | ---------- | --------------------------------------------------- |
+| `--fetch`  | pages      | every kind                                          |
+| `--pull`   | pages      | every kind                                          |
+| `--push`   | pages      | every kind                                          |
+| `--create` | pages      | log-based metrics, monitors, synthetic tests        |
+| `--delete` | —          | log-based metrics, monitors, synthetic tests/suites |
 
-Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked artifact, `--name` (its file name). Leave both out of `--pull`/`--push` to run on everything tracked in the manifest. `--delete` always needs one. `--file-name` names a new file on `--fetch` (pages and dashboards only) and on `--create` (pages and synthetic tests only). See `CONVENTIONS.md` for every flag rule.
+Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked artifact, `--name` (its file name). Leave both out of `--pull`/`--push` to run on everything tracked in the manifest. `--delete` always needs one. `--file-name` names a new file on `--fetch` (pages, dashboards, and monitors only) and on `--create` (pages, monitors, and synthetic tests only). See `CONVENTIONS.md` for every flag rule.
 
 ## How every command behaves
 
@@ -236,6 +237,43 @@ tank datadog --log-metrics --delete --id=mrt.example
 - Deleting a metric loses its history in Datadog, and dashboard widgets that plot it stop showing data.
 
 Datadog rate-limits some endpoints (e.g. 20 log-based metric reads per 10 seconds), so bulk runs can get a 429. The client waits for the reset time Datadog reports and retries up to 3 times.
+
+### Monitors
+
+Same `--fetch`/`--pull`/`--push` flow as dashboards, with `--monitors` and the monitor ID from the Datadog URL (e.g. `.../monitors/23739095`) as `--id`:
+
+```bash
+# Fetch a monitor that isn't tracked yet: saves it to a new file in the project's
+# datadog/synced/monitors/ (named from the monitor name) and adds it to the manifest
+tank datadog --monitors --fetch --id=<monitorId>
+
+# Fetch with a specific file name instead of one derived from the monitor name
+tank datadog --monitors --fetch --id=<monitorId> --file-name=<kebab-case-name>
+
+# Pull/push one monitor by its ID or by its file name, or every tracked one
+tank datadog --monitors --pull --id=<monitorId>
+tank datadog --monitors --push --name=algolia-search.json
+tank datadog --monitors --pull
+
+# Delete a monitor in Datadog, then its JSON file and manifest entry
+tank datadog --monitors --delete --id=<monitorId>
+```
+
+- The remote change check compares the live `modified` against `remoteVersion`. Like dashboards, it's purely client-side.
+- The tracked JSON is Datadog's monitor definition without its read-only fields (`id`, `org_id`, `multi`, `created`, `created_at`, `modified`, `deleted`, `creator`) and its live alert state (`overall_state`, `overall_state_modified`, `state`, `matching_downtimes`), so a monitor changing state never shows up as a change.
+
+Monitors can also be created. Datadog assigns the ID, so `--create` takes `--file-name` instead of `--id`:
+
+```bash
+# Create a monitor from a new file you wrote at the project's
+# datadog/synced/monitors/<kebab-case-name>.json
+tank datadog --monitors --create --file-name=<kebab-case-name>
+```
+
+- Write the file as Datadog's monitor definition without its read-only fields. Copying another monitor's file is the quickest start.
+- `--create` refuses to run if the path is already tracked, if the file doesn't exist or has read-only fields, or if a monitor with the same name already exists in Datadog (use `--fetch` instead). It then rewrites the file from what Datadog returns. `--force` isn't supported.
+- The new monitor starts evaluating, and notifying whoever its `message` mentions, right away.
+- `--delete` has the same checks as for log-based metrics. Datadog refuses to delete a monitor that other resources (e.g. SLOs or composite monitors) still use.
 
 ### Synthetic tests and suites
 

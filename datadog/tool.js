@@ -1,6 +1,7 @@
 import { DatadogClient } from "./lib/datadog-client.js";
 import { dashboardAdapter } from "./lib/dashboards/adapter.js";
 import { logMetricAdapter } from "./lib/log-metrics/adapter.js";
+import { monitorAdapter } from "./lib/monitors/adapter.js";
 import { syntheticTestAdapter } from "./lib/synthetic-tests/adapter.js";
 import { syntheticSuiteAdapter } from "./lib/synthetic-suites/adapter.js";
 
@@ -12,7 +13,7 @@ export const datadogTool = {
   name: "datadog",
   serviceName: "Datadog",
   description:
-    "Syncs Datadog dashboards, log-based metrics, and synthetic tests and suites.",
+    "Syncs Datadog dashboards, log-based metrics, monitors, and synthetic tests and suites.",
   examples: ["--dashboards --pull", "--log-metrics --fetch --id=<metricId>"],
   kinds: {
     dashboard: {
@@ -22,6 +23,10 @@ export const datadogTool = {
     "log-metric": {
       flag: "log-metrics",
       adapter: logMetricAdapter,
+    },
+    monitor: {
+      flag: "monitors",
+      adapter: monitorAdapter,
     },
     "synthetic-test": {
       flag: "synthetic-tests",
@@ -33,20 +38,23 @@ export const datadogTool = {
     },
   },
   manifestHeader: `# Source of truth for which datadog artifacts (dashboards, log-based
-# metrics, and synthetic tests and suites) are synced with which Datadog
-# objects. Read and written by tank ("tank datadog"), which also owns this
-# header: "tank upgrade" rewrites it, and never touches the entries.
+# metrics, monitors, and synthetic tests and suites) are synced with which
+# Datadog objects. Read and written by tank ("tank datadog"), which also owns
+# this header: "tank upgrade" rewrites it, and never touches the entries.
 #
 # Each entry is keyed by the local file's path and holds:
-#   kind: "dashboard", "log-metric", "synthetic-test", or "synthetic-suite".
-#   title: the dashboard title or test/suite name. Log metrics have no
-#     title, so it repeats the metric ID.
-#   id: the Datadog public ID, or the metric name for log metrics.
+#   kind: "dashboard", "log-metric", "monitor", "synthetic-test", or
+#     "synthetic-suite".
+#   title: the dashboard title or monitor/test/suite name. Log metrics have
+#     no title, so it repeats the metric ID.
+#   id: the Datadog ID (public ID, or monitor ID), or the metric name for
+#     log metrics.
 #   lastSyncedAt: when a sync last changed the file or Datadog.
-#   remoteVersion: Datadog's modified_at at the last sync. Log metrics have
-#     no modified_at, so it holds a hash of the metric definition instead.
-#     A push compares the live value against it before overwriting (a purely
-#     client-side check: Datadog has no optimistic concurrency).
+#   remoteVersion: Datadog's modified_at (modified, for monitors) at the
+#     last sync. Log metrics have no modified_at, so it holds a hash of the
+#     metric definition instead. A push compares the live value against it
+#     before overwriting (a purely client-side check: Datadog has no
+#     optimistic concurrency).
 #   contentHash: hash of the local file at the last sync.
 `,
   // Everything Datadog needs is a credential (see DatadogClient).

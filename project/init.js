@@ -28,16 +28,50 @@ const COMMIT_MESSAGE = "Initialize tank project";
 /** Lines .gitignore must have, so local files are never committed. */
 const GITIGNORE_LINES = [".env", ".DS_Store"];
 
+const ANSI_GREEN = "\x1b[32m";
+const ANSI_BOLD_BRIGHT_GREEN = "\x1b[1;92m";
+const ANSI_RESET = "\x1b[0m";
+
+/** The banner's lines, each with the color it gets on a color terminal. */
+const BANNER_LINES = [
+  { text: " ▓▒░ 1 0 ﾊ 1 ﾐ 0 ░▒▓", color: ANSI_GREEN },
+  {
+    text: " ▓▒░   T A N K   ░▒▓   project initialized",
+    color: ANSI_BOLD_BRIGHT_GREEN,
+  },
+  { text: " ▓▒░ 0 ﾂ 1 ｳ 1 ﾑ ░▒▓", color: ANSI_GREEN },
+];
+
 /**
- * Runs "tank init" on the current folder.
+ * Runs "tank init" on the current folder, and prints the banner once every
+ * step succeeded.
  * @param {string[]} argv The arguments after "init".
  */
 export async function runInit(argv) {
   return runProjectCommand({
     argv,
     usage: USAGE,
-    run: (rootDir, results) => initProject(rootDir, { results }),
+    run: async (rootDir, results) => {
+      await initProject(rootDir, { results });
+
+      if (results.every((result) => result.status !== "failed")) {
+        printBanner();
+      }
+    },
   });
+}
+
+/**
+ * Prints the banner to stderr, so stdout keeps only the JSON summary. It's
+ * green only when stderr supports color (a terminal, and no NO_COLOR).
+ */
+function printBanner() {
+  const useColor = process.stderr.isTTY && process.stderr.hasColors();
+  const lines = BANNER_LINES.map(({ text, color }) =>
+    useColor ? `${color}${text}${ANSI_RESET}` : text
+  );
+
+  console.error(`\n${lines.join("\n")}\n`);
 }
 
 /**

@@ -1,11 +1,20 @@
 import { after, before, beforeEach, afterEach, test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import os from "node:os";
 import path from "node:path";
 import { initProject } from "../init.js";
+
+const TANK_BIN_PATH = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "bin",
+  "tank.js"
+);
 
 /**
  * Isolates git from the user's config (identity, signing, hooks), so
@@ -81,6 +90,26 @@ test("init makes an empty folder a git repository with one commit of the project
   assert.equal(git("rev-list", "--count", "HEAD").trim(), "1");
   assert.deepEqual(listCommittedFiles(), PROJECT_FILES);
   assert.equal(git("status", "--porcelain"), "");
+});
+
+function runTankInit() {
+  return spawnSync(process.execPath, [TANK_BIN_PATH, "init"], {
+    cwd: rootDir,
+    encoding: "utf8",
+  });
+}
+
+test("tank init prints the banner to stderr only when it succeeds, uncolored off a terminal", () => {
+  const firstRun = runTankInit();
+
+  assert.equal(JSON.parse(firstRun.stdout).ok, true);
+  assert.match(firstRun.stderr, /T A N K {3}░▒▓ {3}project initialized/);
+  assert.equal(firstRun.stderr.includes("\x1b["), false);
+
+  const secondRun = runTankInit();
+
+  assert.equal(JSON.parse(secondRun.stdout).ok, false);
+  assert.doesNotMatch(secondRun.stderr, /T A N K/);
 });
 
 test("init refuses a folder that has tank.env, without writing anything", async () => {
