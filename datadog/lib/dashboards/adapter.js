@@ -25,6 +25,7 @@ export const dashboardAdapter = {
   actions: ["fetch", "pull", "push"],
   rootDir: DATADOG_DIR,
   allowsFileName: true,
+  usageNote: "Its ID is the dashboard ID.",
   fileNameSuffix: ".json",
 
   async getRemote(client, id) {

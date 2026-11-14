@@ -105,6 +105,9 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  *   it from every one first.
  * @property {(client: any, id: string) => Promise<void>} [deleteRemote]
  *   Required when `actions` includes "delete".
+ * @property {string} [usageNote] What the usage text can't derive from the
+ *   other capabilities (e.g. what the ID is, or how `findEntriesByName`
+ *   matches), printed under the kind flag.
  * @property {PushCheck[]} [pushChecks] Kind-specific push checks, run after
  *   the contract's own checks.
  * @property {(client: any, document: any, remote: any,

@@ -25,6 +25,8 @@ export const syntheticSuiteAdapter = {
   actions: ["fetch", "pull", "push", "delete"],
   rootDir: DATADOG_DIR,
   allowsFileName: false,
+  usageNote:
+    "Its ID is the synthetic public ID. --name matches its folder name, with or without a trailing /.",
 
   // --name is the suite's folder name, with or without a trailing slash (as
   // shell tab-completion adds it).

@@ -28,6 +28,7 @@ export const logMetricAdapter = {
   actions: ["fetch", "pull", "push", "create", "delete"],
   rootDir: DATADOG_DIR,
   allowsFileName: false,
+  usageNote: "Its ID is the metric name.",
 
   async getRemote(client, id) {
     return client.getLogMetric(id);

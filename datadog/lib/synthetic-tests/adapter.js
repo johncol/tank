@@ -48,6 +48,7 @@ export const syntheticTestAdapter = {
   allowsFileName: false,
   fileNameSuffix: ".json",
   assignsIdOnCreate: true,
+  usageNote: "Its ID is the synthetic public ID.",
 
   async getRemote(client, id) {
     return client.getSyntheticTest(id);

@@ -108,6 +108,8 @@ export const pageAdapter = {
   allowsFileName: true,
   fileNameSuffix: ".md",
   assignsIdOnCreate: true,
+  usageNote:
+    'Its ID is the Confluence page ID. A new page\'s file starts with its title as a "# " heading.',
 
   async getRemote(client, id) {
     return client.getPage(id);
