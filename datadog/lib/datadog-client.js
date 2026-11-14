@@ -105,6 +105,31 @@ export class DatadogClient {
     });
   }
 
+  /** Lists every dashboard, as Datadog's summaries (with `id` and
+   * `title`), one page at a time. */
+  async listDashboards() {
+    const pageSize = 100;
+    const dashboards = [];
+
+    for (let start = 0; ; start += pageSize) {
+      const response = await this.request(
+        `/dashboard?count=${pageSize}&start=${start}`
+      );
+
+      dashboards.push(...response.dashboards);
+
+      if (response.dashboards.length < pageSize) {
+        return dashboards;
+      }
+    }
+  }
+
+  /** Creates a dashboard from the given definition and returns it, with the
+   * `id` Datadog assigned. */
+  async createDashboard(dashboard) {
+    return this.request("/dashboard", { method: "POST", body: dashboard });
+  }
+
   /** Deletes a dashboard. The monitors and metrics its widgets show aren't
    * deleted. */
   async deleteDashboard(dashboardId) {

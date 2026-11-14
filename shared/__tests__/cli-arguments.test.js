@@ -108,9 +108,9 @@ describe("parseCliArguments", () => {
       /requires --id or --name/,
     ],
     [
-      "--dashboards --create --id=a",
+      "--synthetic-suites --create --file-name=a",
       "an action the kind doesn't support",
-      /--create isn't supported with --dashboards/,
+      /--create isn't supported with --synthetic-suites/,
     ],
     [
       "--log-metrics --create --id=a --file-name=b",

@@ -83,7 +83,11 @@ const INVALID_COMMANDS = [
   ],
   ["datadog", ["--log-metrics", "--create"], "--create without --id"],
   ["datadog", ["--log-metrics", "--delete"], "--delete without a selector"],
-  ["datadog", ["--dashboards", "--create", "--id=a"], "--create on dashboards"],
+  [
+    "datadog",
+    ["--synthetic-suites", "--create", "--file-name=a"],
+    "--create on synthetic suites",
+  ],
   ["confluence", ["--delete", "--id=1"], "--delete on Confluence"],
 ];
 

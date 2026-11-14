@@ -116,15 +116,15 @@ The `AGENTS.md` and `README.md` blocks tell readers to run `tank docs` instead o
 
 Both tools share the same actions and flags, and the same command-line runner. Datadog also needs a kind flag on every call (`--dashboards`, `--log-metrics`, `--monitors`, `--synthetic-tests`, or `--synthetic-suites`), so an omitted flag never silently defaults to one kind. Confluence only has pages, so it doesn't need one (`--pages` is accepted but optional).
 
-| Action     | Confluence | Datadog                                      |
-| ---------- | ---------- | -------------------------------------------- |
-| `--fetch`  | pages      | every kind                                   |
-| `--pull`   | pages      | every kind                                   |
-| `--push`   | pages      | every kind                                   |
-| `--create` | pages      | log-based metrics, monitors, synthetic tests |
-| `--delete` | —          | every kind                                   |
+| Action     | Confluence | Datadog                         |
+| ---------- | ---------- | ------------------------------- |
+| `--fetch`  | pages      | every kind                      |
+| `--pull`   | pages      | every kind                      |
+| `--push`   | pages      | every kind                      |
+| `--create` | pages      | every kind but synthetic suites |
+| `--delete` | —          | every kind                      |
 
-Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked artifact, `--name` (its file name). Leave both out of `--pull`/`--push` to run on everything tracked in the manifest. `--delete` always needs one. `--file-name` names a new file on `--fetch` (pages, dashboards, and monitors only) and on `--create` (pages, monitors, and synthetic tests only). See `CONVENTIONS.md` for every flag rule.
+Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked artifact, `--name` (its file name). Leave both out of `--pull`/`--push` to run on everything tracked in the manifest. `--delete` always needs one. `--file-name` names a new file on `--fetch` (pages, dashboards, and monitors only) and on `--create` (pages, dashboards, monitors, and synthetic tests only). See `CONVENTIONS.md` for every flag rule.
 
 ## How every command behaves
 
@@ -206,6 +206,17 @@ tank datadog --dashboards --delete --id=<dashboardId>
 - The tracked JSON is Datadog's dashboard definition with read-only, server-assigned fields (`id`, `author_handle`, `author_name`, `created_at`, `modified_at`, `url`, `is_read_only`) stripped out, since those live in the manifest instead.
 - If only `modified_at` moved on, `--pull` updates the manifest entry without rewriting the file.
 - `--delete` refuses to run if the local file has unpushed changes, if the dashboard changed in Datadog since the last sync, or if the dashboard no longer exists in Datadog. `--force` overrides all three; for a dashboard that no longer exists, it only removes the local file and manifest entry.
+
+Dashboards can also be created. Datadog assigns the ID, so `--create` takes `--file-name` instead of `--id`:
+
+```bash
+# Create a dashboard from a new file you wrote at the project's
+# datadog/synced/dashboards/<kebab-case-name>.json
+tank datadog --dashboards --create --file-name=<kebab-case-name>
+```
+
+- Write the file as Datadog's dashboard definition without its read-only fields. Copying another dashboard's file is the quickest start.
+- `--create` refuses to run if the path is already tracked, if the file doesn't exist or has read-only fields, or if a dashboard with the same `title` already exists in Datadog (use `--fetch` instead). It then rewrites the file from what Datadog returns. `--force` isn't supported.
 
 ### Log-based metrics
 

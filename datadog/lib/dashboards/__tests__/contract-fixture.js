@@ -14,6 +14,7 @@ export const dashboardContractFixture = {
   createFakeRemote() {
     const dashboards = new Map();
     let clock = 0;
+    let nextCreatedNumber = 900;
 
     function nextModifiedAt() {
       clock += 1;
@@ -47,6 +48,25 @@ export const dashboardContractFixture = {
 
           dashboards.set(id, updated);
           return structuredClone(updated);
+        },
+        async listDashboards() {
+          return [...dashboards.values()].map(({ id, title }) => ({
+            id,
+            title,
+          }));
+        },
+        async createDashboard(dashboard) {
+          const id = `new-dsh-${nextCreatedNumber}`;
+          nextCreatedNumber += 1;
+          const created = {
+            ...dashboard,
+            id,
+            author_handle: "someone@example.com",
+            modified_at: nextModifiedAt(),
+          };
+
+          dashboards.set(id, created);
+          return structuredClone(created);
         },
         async deleteDashboard(id) {
           getExisting(id);
@@ -91,6 +111,15 @@ export const dashboardContractFixture = {
     return formatJson({
       ...JSON.parse(content),
       description: "Edited locally",
+    });
+  },
+
+  // Titled like addRemote titles the remote with the same key.
+  buildNewLocalContent(key) {
+    return formatJson({
+      title: `Contract Dashboard ${key}`,
+      widgets: [],
+      layout_type: "ordered",
     });
   },
 };

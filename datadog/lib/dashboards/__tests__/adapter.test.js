@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseDocument } from "yaml";
 import { dashboardAdapter } from "../adapter.js";
+import { formatJson } from "../../../../shared/json.js";
 
 test("dashboardAdapter names a fetched file from the dashboard title", () => {
   const artifactPath = dashboardAdapter.buildFetchPath({
@@ -30,4 +31,23 @@ test("dashboardAdapter keeps read-only fields out of the file, and reads modifie
     remoteVersion: "2026-01-02T00:00:00.000Z",
     content: '{\n  "title": "My Dashboard",\n  "widgets": []\n}\n',
   });
+});
+
+test("dashboardAdapter refuses to create from a file with read-only fields, without calling Datadog", async () => {
+  let createCount = 0;
+  const client = {
+    async createDashboard() {
+      createCount += 1;
+    },
+  };
+
+  await assert.rejects(
+    dashboardAdapter.createRemote(
+      client,
+      undefined,
+      formatJson({ title: "Copied", id: "abc-def-001", url: "/dashboard/x" })
+    ),
+    /Remove id, url from the file/
+  );
+  assert.equal(createCount, 0);
 });

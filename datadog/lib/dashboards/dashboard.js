@@ -13,3 +13,9 @@ export const READ_ONLY_DASHBOARD_FIELDS = [
   "url",
   "is_read_only",
 ];
+
+/** Lists the read-only fields a dashboard definition has, e.g. when it was
+ * copied from another dashboard's API response. */
+export function findReadOnlyDashboardFields(dashboard) {
+  return READ_ONLY_DASHBOARD_FIELDS.filter((field) => field in dashboard);
+}
