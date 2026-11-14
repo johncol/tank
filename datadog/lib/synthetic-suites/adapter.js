@@ -61,14 +61,14 @@ export const syntheticSuiteAdapter = {
     await client.deleteSyntheticSuite(id);
   },
 
-  // `this` is the adapter the engine runs, with the rootDir runCli gave it,
-  // so the tests land in the same folder as the suite.
-  async afterFetch(client, document, suite) {
-    return fetchUntrackedMemberTests(client, document, suite, this.rootDir);
+  followUpKind: "synthetic-test",
+
+  async afterFetch(client, document, suite, { followUpAdapter }) {
+    return fetchUntrackedMemberTests(client, document, suite, followUpAdapter);
   },
 
-  async afterPull(client, document, suite) {
-    return fetchUntrackedMemberTests(client, document, suite, this.rootDir);
+  async afterPull(client, document, suite, { followUpAdapter }) {
+    return fetchUntrackedMemberTests(client, document, suite, followUpAdapter);
   },
 
   deleteFollowUpMessage() {

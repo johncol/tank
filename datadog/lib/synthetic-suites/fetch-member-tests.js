@@ -2,7 +2,6 @@ import {
   findEntryById,
   listManifestEntries,
 } from "../../../shared/manifest.js";
-import { syntheticTestAdapter } from "../synthetic-tests/adapter.js";
 import { fetchOne } from "../../../shared/actions.js";
 
 /**
@@ -18,21 +17,21 @@ import { fetchOne } from "../../../shared/actions.js";
  * @param {any} client
  * @param {any} document
  * @param {{ tests?: { public_id: string }[] }} suite
- * @param {string} rootDir The folder manifest paths are relative to.
+ * @param {import("../../../shared/actions.js").Adapter} testAdapter The
+ *   synthetic test adapter, with the suite's rootDir.
  * @returns {Promise<Object[]>} One fetch result per untracked test.
  */
 export async function fetchUntrackedMemberTests(
   client,
   document,
   suite,
-  rootDir
+  testAdapter
 ) {
-  const testAdapter = { ...syntheticTestAdapter, rootDir };
   const results = [];
 
   for (const { public_id: testId } of suite.tests ?? []) {
     if (
-      findEntryById(listManifestEntries(document), "synthetic-test", testId)
+      findEntryById(listManifestEntries(document), testAdapter.kind, testId)
     ) {
       continue;
     }

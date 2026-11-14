@@ -50,6 +50,16 @@ export function findCapabilityProblems(kinds) {
       ]);
     }
 
+    if (adapter.afterFetch || adapter.afterPull) {
+      requireCapabilities('"afterFetch" or "afterPull"', ["followUpKind"]);
+    }
+
+    if (adapter.followUpKind && !kinds[adapter.followUpKind]) {
+      problems.push(
+        `${kind}: its follow-up kind "${adapter.followUpKind}" isn't one of the tool's kinds.`
+      );
+    }
+
     if (adapter.parent && !kinds[adapter.parent.kind]) {
       problems.push(
         `${kind}: its parent kind "${adapter.parent.kind}" isn't one of the tool's kinds.`

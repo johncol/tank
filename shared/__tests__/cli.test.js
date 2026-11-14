@@ -208,6 +208,47 @@ describe("runCli", () => {
     assert.equal(process.exitCode, 1);
   });
 
+  test("passes the follow-up kind's adapter, in rootDir, to afterFetch", async () => {
+    silenceOutput();
+    const rootDir = await mkdtemp(path.join(os.tmpdir(), "tank-cli-test-"));
+
+    try {
+      await writeFile(path.join(rootDir, "sync-manifest.yaml"), "", "utf8");
+
+      const summary = await runCli({
+        kinds: DATADOG_KINDS,
+        command: "tank test",
+        rootDir,
+        argv: ["--synthetic-suites", "--fetch", "--id=s-1"],
+        createClient: () => ({
+          getSyntheticSuite: async (id) => ({
+            public_id: id,
+            name: "Checkout",
+            tests: [{ public_id: "t-1" }],
+            modified_at: "2026-01-01T00:00:00.000Z",
+          }),
+          getSyntheticTest: async (id) => ({
+            public_id: id,
+            name: "Home page",
+            type: "api",
+            modified_at: "2026-01-01T00:00:00.000Z",
+          }),
+          getSyntheticTestParentSuites: async () => [
+            { public_id: "s-1", name: "Checkout" },
+          ],
+        }),
+      });
+
+      assert.equal(summary.ok, true, JSON.stringify(summary.results));
+      const testResult = summary.results[1];
+
+      assert.equal(testResult.kind, "synthetic-test");
+      await readFile(path.join(rootDir, testResult.path), "utf8");
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("saves the manifest after each artifact of a bulk run", async () => {
     silenceOutput();
     const rootDir = await mkdtemp(path.join(os.tmpdir(), "tank-cli-test-"));

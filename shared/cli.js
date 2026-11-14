@@ -130,12 +130,14 @@ async function runAction(options, tool) {
   const { document, entries } = await tool.loadManifest();
   /** @type {Adapter} */
   const adapter = { ...options.adapter, rootDir: tool.rootDir };
-  const parentDefinition = adapter.parent
-    ? tool.kinds[adapter.parent.kind]?.adapter
-    : undefined;
-  const parentAdapter = parentDefinition
-    ? { ...parentDefinition, rootDir: tool.rootDir }
-    : undefined;
+  /** @param {string | undefined} kind */
+  const findAdapter = (kind) => {
+    const definition = kind ? tool.kinds[kind]?.adapter : undefined;
+
+    return definition ? { ...definition, rootDir: tool.rootDir } : undefined;
+  };
+  const parentAdapter = findAdapter(adapter.parent?.kind);
+  const followUpAdapter = findAdapter(adapter.followUpKind);
   let results;
   /** @param {Object[]} resultsSoFar */
   const saveManifest = async (resultsSoFar) => {
@@ -152,7 +154,7 @@ async function runAction(options, tool) {
       tool.createClient(),
       document,
       /** @type {string} */ (id),
-      { force, fileName }
+      { force, fileName, followUpAdapter }
     );
   } else if (action === "create") {
     let parent;
@@ -203,7 +205,7 @@ async function runAction(options, tool) {
         tool.createClient(),
         document,
         actionOne,
-        { force },
+        { force, followUpAdapter },
         saveManifest
       );
     } else {
@@ -239,7 +241,7 @@ async function runAction(options, tool) {
         tool.createClient(),
         document,
         selection.entry,
-        { force, parentAdapter }
+        { force, parentAdapter, followUpAdapter }
       );
     }
   }

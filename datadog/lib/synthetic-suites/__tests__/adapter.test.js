@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { parseDocument } from "yaml";
 import { syntheticSuiteAdapter } from "../adapter.js";
+import { syntheticTestAdapter } from "../../synthetic-tests/adapter.js";
 import { fetchOne, pullOne, deleteOne } from "../../../../shared/actions.js";
 import {
   listManifestEntries,
@@ -23,6 +24,7 @@ const TEMP_BASE_DIR = path.join(os.tmpdir(), "synthetic-suite-adapter-test");
 after(() => rm(TEMP_BASE_DIR, { recursive: true, force: true }));
 
 let adapter;
+let testAdapter;
 let document;
 
 beforeEach(async () => {
@@ -30,6 +32,7 @@ beforeEach(async () => {
   const rootDir = await mkdtemp(path.join(TEMP_BASE_DIR, "synthetic-suite-"));
 
   adapter = { ...syntheticSuiteAdapter, rootDir };
+  testAdapter = { ...syntheticTestAdapter, rootDir };
   document = parseDocument("{}");
 });
 
@@ -37,6 +40,21 @@ afterEach(() => rm(adapter.rootDir, { recursive: true, force: true }));
 
 function resolve(artifactPath) {
   return path.join(adapter.rootDir, artifactPath);
+}
+
+/** Fetches the suite as runCli does, with the test adapter for its tests. */
+function fetchSuite(client, { force = false } = {}) {
+  return fetchOne(adapter, client, document, SUITE_ID, {
+    force,
+    followUpAdapter: testAdapter,
+  });
+}
+
+/** Pulls the suite as runCli does, with the test adapter for its tests. */
+function pullSuite(client, entry) {
+  return pullOne(adapter, client, document, entry, {
+    followUpAdapter: testAdapter,
+  });
 }
 
 /** A fake Datadog holding one suite with the given member test IDs. */
@@ -93,7 +111,7 @@ test("fetch also fetches the suite's untracked tests into its folder, after the 
   trackTest("ttt-tracked");
   const fake = createFakeDatadog(["ttt-new", "ttt-tracked"]);
 
-  const results = await fetchOne(adapter, fake.client, document, SUITE_ID);
+  const results = await fetchSuite(fake.client);
 
   assert.deepEqual(summarize(results), [
     ["synthetic-suite", SUITE_PATH, "fetch", "success"],
@@ -113,9 +131,7 @@ test("fetch never passes --force on to its tests", async () => {
   await writeFile(resolve(SUITE_PATH), "untracked suite", "utf8");
   await writeFile(resolve(untrackedTestPath), "untracked test", "utf8");
 
-  const results = await fetchOne(adapter, fake.client, document, SUITE_ID, {
-    force: true,
-  });
+  const results = await fetchSuite(fake.client, { force: true });
 
   assert.deepEqual(summarize(results), [
     ["synthetic-suite", SUITE_PATH, "fetch", "success"],
@@ -130,13 +146,13 @@ test("fetch never passes --force on to its tests", async () => {
 
 test("pull fetches tests added to the suite in Datadog, and leaves tracked ones alone", async () => {
   const fake = createFakeDatadog([]);
-  await fetchOne(adapter, fake.client, document, SUITE_ID);
+  await fetchSuite(fake.client);
   const suiteEntry = listManifestEntries(document).find(
     (entry) => entry.id === SUITE_ID
   );
   fake.suite.tests = [{ public_id: "ttt-added" }];
 
-  const results = await pullOne(adapter, fake.client, document, suiteEntry);
+  const results = await pullSuite(fake.client, suiteEntry);
 
   assert.deepEqual(summarize(results), [
     ["synthetic-suite", SUITE_PATH, "pull", "success"],
@@ -148,10 +164,8 @@ test("pull fetches tests added to the suite in Datadog, and leaves tracked ones 
     ],
   ]);
 
-  const [skipped, ...followUps] = await pullOne(
-    adapter,
+  const [skipped, ...followUps] = await pullSuite(
     fake.client,
-    document,
     listManifestEntries(document).find((entry) => entry.id === SUITE_ID)
   );
 
@@ -161,18 +175,13 @@ test("pull fetches tests added to the suite in Datadog, and leaves tracked ones 
 
 test("pull fetches same-named tests side by side, so the next pull has none left to fetch", async () => {
   const fake = createFakeDatadog([]);
-  await fetchOne(adapter, fake.client, document, SUITE_ID);
+  await fetchSuite(fake.client);
   fake.suite.tests = [{ public_id: "ttt-one" }, { public_id: "ttt-two" }];
   fake.testNames = { "ttt-one": "Homepage - US", "ttt-two": "Homepage (US)" };
   const findSuiteEntry = () =>
     listManifestEntries(document).find((entry) => entry.id === SUITE_ID);
 
-  const results = await pullOne(
-    adapter,
-    fake.client,
-    document,
-    findSuiteEntry()
-  );
+  const results = await pullSuite(fake.client, findSuiteEntry());
 
   assert.deepEqual(summarize(results), [
     ["synthetic-suite", SUITE_PATH, "pull", "success"],
@@ -185,10 +194,8 @@ test("pull fetches same-named tests side by side, so the next pull has none left
     ],
   ]);
 
-  const [skipped, ...followUps] = await pullOne(
-    adapter,
+  const [skipped, ...followUps] = await pullSuite(
     fake.client,
-    document,
     findSuiteEntry()
   );
 
@@ -198,7 +205,7 @@ test("pull fetches same-named tests side by side, so the next pull has none left
 
 test("delete notes that the suite's tests weren't deleted", async () => {
   const fake = createFakeDatadog([]);
-  await fetchOne(adapter, fake.client, document, SUITE_ID);
+  await fetchSuite(fake.client);
   const suiteEntry = listManifestEntries(document).find(
     (entry) => entry.id === SUITE_ID
   );

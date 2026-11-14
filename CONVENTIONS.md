@@ -146,7 +146,7 @@ Declared in the kind's adapter, and covered by the contract tests:
 - How the remote ID, title, and `remoteVersion` are read, and how the file is serialized.
 - How the target path is computed (from the title, the ID, or suite membership).
 - Kind-specific checks, each marked forceable or not.
-- Follow-up artifacts (a suite fetching its untracked tests) and follow-up messages (a suite delete asking to pull its tests).
+- Follow-up artifacts (a suite fetching its untracked tests) and follow-up messages (a suite delete asking to pull its tests). Follow-up artifacts are of another of the tool's kinds (`followUpKind`), whose adapter `runCli` passes in, as it does the parent's.
 
 ## Project commands: `init`, `upgrade`, and `docs`
 

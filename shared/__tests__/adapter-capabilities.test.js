@@ -62,3 +62,26 @@ test("reports a parent kind the tool doesn't have", () => {
     ["widget: its parent kind \"board\" isn't one of the tool's kinds."]
   );
 });
+
+test("reports follow-ups without a follow-up kind the tool has", () => {
+  const afterFetch = async () => [];
+
+  assert.deepEqual(
+    findCapabilityProblems({
+      widget: { flag: "widgets", adapter: { ...COMPLETE_ADAPTER, afterFetch } },
+      gadget: {
+        flag: "gadgets",
+        adapter: {
+          ...COMPLETE_ADAPTER,
+          kind: "gadget",
+          afterFetch,
+          followUpKind: "board",
+        },
+      },
+    }),
+    [
+      'widget: "afterFetch" or "afterPull" requires "followUpKind".',
+      "gadget: its follow-up kind \"board\" isn't one of the tool's kinds.",
+    ]
+  );
+});

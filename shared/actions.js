@@ -111,12 +111,15 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  *   matches), printed under the kind flag.
  * @property {PushCheck[]} [pushChecks] Kind-specific push checks, run after
  *   the contract's own checks.
- * @property {(this: Adapter, client: any, document: any, remote: any,
- *   options: { force: boolean }) => Promise<Object[]>} [afterFetch] Fetches
- *   follow-up artifacts and returns their results.
- * @property {(this: Adapter, client: any, document: any, remote: any,
- *   options: { force: boolean }) => Promise<Object[]>} [afterPull] Fetches
- *   follow-up artifacts and returns their results.
+ * @property {string} [followUpKind] The kind `afterFetch` and `afterPull`
+ *   fetch into. runCli passes that kind's adapter to them as
+ *   `followUpAdapter`. Required when either is declared.
+ * @property {(client: any, document: any, remote: any, options: {
+ *   force: boolean, followUpAdapter: Adapter }) => Promise<Object[]>}
+ *   [afterFetch] Fetches follow-up artifacts and returns their results.
+ * @property {(client: any, document: any, remote: any, options: {
+ *   force: boolean, followUpAdapter: Adapter }) => Promise<Object[]>}
+ *   [afterPull] Fetches follow-up artifacts and returns their results.
  * @property {(context: { client: any, document: any, entry: Object,
  *   remote: any }) => string | undefined | Promise<string | undefined>}
  *   [deleteFollowUpMessage] A follow-up step to report after a delete.
@@ -300,7 +303,9 @@ function buildUnsupportedResult(adapter, id, artifactPath, action) {
  * @param {any} client
  * @param {any} document
  * @param {string} id
- * @param {{ force?: boolean, fileName?: string }} [options]
+ * @param {{ force?: boolean, fileName?: string,
+ *   followUpAdapter?: Adapter }} [options] `followUpAdapter` is the adapter
+ *   of `adapter.followUpKind`, passed on to `afterFetch`.
  * @returns {Promise<Object[]>} The fetch result, followed by any follow-up
  *   results.
  */
@@ -309,7 +314,7 @@ export async function fetchOne(
   client,
   document,
   id,
-  { force = false, fileName } = {}
+  { force = false, fileName, followUpAdapter } = {}
 ) {
   const action = "fetch";
   const fail = (message, artifactPath) =>
@@ -392,7 +397,10 @@ export async function fetchOne(
     );
 
     const followUpResults = adapter.afterFetch
-      ? await adapter.afterFetch(client, document, remote, { force: false })
+      ? await adapter.afterFetch(client, document, remote, {
+          force: false,
+          followUpAdapter: /** @type {Adapter} */ (followUpAdapter),
+        })
       : [];
 
     return [
@@ -414,6 +422,13 @@ export async function fetchOne(
 /**
  * --pull: remote to local.
  *
+ * @param {Adapter} adapter
+ * @param {any} client
+ * @param {any} document
+ * @param {any} entry
+ * @param {{ force?: boolean, followUpAdapter?: Adapter }} [options]
+ *   `followUpAdapter` is the adapter of `adapter.followUpKind`, passed on
+ *   to `afterPull`.
  * @returns {Promise<Object[]>} The pull result, followed by any follow-up
  *   results.
  */
@@ -422,7 +437,7 @@ export async function pullOne(
   client,
   document,
   entry,
-  { force = false } = {}
+  { force = false, followUpAdapter } = {}
 ) {
   const action = "pull";
   const fail = (message) =>
@@ -467,7 +482,10 @@ export async function pullOne(
     const description = adapter.describeRemote(remote);
     const followUpResults = async () =>
       adapter.afterPull
-        ? await adapter.afterPull(client, document, remote, { force: false })
+        ? await adapter.afterPull(client, document, remote, {
+            force: false,
+            followUpAdapter: /** @type {Adapter} */ (followUpAdapter),
+          })
         : [];
 
     const isLocalFileIntact =
