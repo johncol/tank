@@ -1,10 +1,16 @@
-import { UsageError, buildSummary, reportSummary } from "../shared/cli.js";
+import {
+  UsageError,
+  buildSummary,
+  isHelpRequest,
+  reportHelp,
+  reportSummary,
+} from "../shared/cli.js";
 import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
 
 /**
  * Runs "tank init" or "tank upgrade" from the command line: both take no
- * arguments and work on the project root. Prints exactly one JSON summary
+ * arguments but `--help`, and work on the project root. Prints exactly one JSON summary
  * to stdout, with the results gathered so far when the run stops with an
  * error, and sets the exit code, the same way as the sync tools' runCli.
  *
@@ -17,6 +23,10 @@ import { getErrorMessage } from "../shared/error.js";
  * @returns {Promise<import("../shared/cli.js").Summary>}
  */
 export async function runProjectCommand({ argv, usage, run }) {
+  if (isHelpRequest(argv)) {
+    return reportHelp(usage);
+  }
+
   const results = [];
   let summary;
 

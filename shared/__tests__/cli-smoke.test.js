@@ -102,12 +102,46 @@ describe("CLI smoke tests (invalid flags)", () => {
   }
 });
 
+const HELP_COMMANDS = [
+  [["--help"], "Usage: tank <command>"],
+  [["-h"], "Usage: tank <command>"],
+  [["datadog", "--help"], "Usage: tank datadog"],
+  [["confluence", "-h"], "Usage: tank confluence"],
+  [["datadog", "--dashboards", "--pull", "--help"], "Usage: tank datadog"],
+  [["init", "--help"], "Usage: tank init"],
+  [["upgrade", "--help"], "Usage: tank upgrade"],
+];
+
+describe("CLI smoke tests (--help)", () => {
+  for (const [[command, ...argumentsList], expectedUsage] of HELP_COMMANDS) {
+    test(`tank ${[command, ...argumentsList].join(" ")} prints the usage outside a project`, async () => {
+      const emptyDir = await mkdtemp(path.join(os.tmpdir(), "tank-smoke-"));
+
+      try {
+        const { exitCode, stdout, stderr } = runTool(
+          command,
+          argumentsList,
+          emptyDir
+        );
+        const summary = JSON.parse(stdout);
+
+        assert.equal(exitCode, 0);
+        assert.equal(summary.ok, true);
+        assert.deepEqual(summary.results, []);
+        assert.ok(stderr.startsWith(expectedUsage));
+      } finally {
+        await rm(emptyDir, { recursive: true, force: true });
+      }
+    });
+  }
+});
+
 describe("CLI smoke tests (outside a project root)", () => {
   test("a tool command refuses to run without tank.env", async () => {
     const emptyDir = await mkdtemp(path.join(os.tmpdir(), "tank-smoke-"));
 
     try {
-      const { exitCode, stdout } = runTool(
+      const { exitCode, stdout, stderr } = runTool(
         "datadog",
         ["--dashboards", "--pull"],
         emptyDir
@@ -117,6 +151,7 @@ describe("CLI smoke tests (outside a project root)", () => {
       assert.equal(exitCode, 1);
       assert.equal(summary.ok, false);
       assert.match(summary.error, /Not a tank project/);
+      assert.match(stderr, /Not a tank project/);
     } finally {
       await rm(emptyDir, { recursive: true, force: true });
     }

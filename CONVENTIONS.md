@@ -32,7 +32,8 @@ Only tank writes the manifest. Editing an entry by hand changes nothing remotely
 
 `tank confluence` and `tank datadog` are thin: they declare their kinds, client, and manifest, and call `runCli` in `shared/cli.js`, which parses, validates, dispatches, and prints the summary the same way for every tool. Validation comes from the selected kind's adapter (`actions`, `allowsFileName`, `findEntriesByName`), never from a branch on the kind. Every flag is validated before the manifest, the credentials, or the network are touched.
 
-- Tool commands run only at a project root. That's checked before anything else, flags included: a folder without a `tank.env`, or a `tank.env` that sets anything but the tools' domain settings, fails the run.
+- `--help` (or `-h`) prints the command's usage text to stderr and a successful empty summary to stdout, and exits 0, whatever else is passed. It works for `tank` itself and every command, outside a project root too, and never touches the manifest, the credentials, or the network.
+- Tool commands run only at a project root. That's checked before anything else, flags included (except `--help`): a folder without a `tank.env`, or a `tank.env` that sets anything but the tools' domain settings, fails the run, with the reason on stderr.
 - Exactly one action flag per run (`--fetch`, `--pull`, `--push`, `--create`, `--delete`). An action the kind's adapter doesn't support is rejected.
 - A tool with several kinds (Datadog) takes exactly one kind flag (`--dashboards`, `--log-metrics`, `--synthetic-tests`, `--synthetic-suites`), so an omitted flag never defaults to a kind. A tool with a single kind (Confluence) doesn't need one: `--pages` is accepted but optional.
 - `--id=<remoteId>` picks an artifact by its remote ID. Required by `--fetch`, and by `--create` for kinds whose ID you choose (`log-metric`). Rejected by `--create` for kinds whose ID the remote assigns (`synthetic-test`, `page`: their adapters set `assignsIdOnCreate`).
@@ -148,7 +149,7 @@ Declared in the kind's adapter, and covered by the contract tests:
 
 ## Project commands: `init` and `upgrade`
 
-They act on the project, not on artifacts, so they take no action or kind flags. They print the same JSON summary, with one result per file they check (`skipped` when it needed no change), one per migration that ran, and, for `init`, one per git step (without a `path`). Each holds `path`, `action` (`init` or `upgrade`), `status`, and, when useful, `message`.
+They act on the project, not on artifacts, so they take no action or kind flags (only `--help`). They print the same JSON summary, with one result per file they check (`skipped` when it needed no change), one per migration that ran, and, for `init`, one per git step (without a `path`). Each holds `path`, `action` (`init` or `upgrade`), `status`, and, when useful, `message`.
 
 `tank init`:
 

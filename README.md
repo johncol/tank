@@ -54,7 +54,7 @@ datadog/
   synced/              # JSON files synced with Datadog artifacts
 ```
 
-The project root is always the current folder: tank never searches parent folders. Every command except `tank init` refuses to run in a folder without a `tank.env` ("Not a tank project"), so running from inside `confluence/` can't nest artifacts there.
+The project root is always the current folder: tank never searches parent folders. Every command except `tank init` refuses to run in a folder without a `tank.env` ("Not a tank project", on stderr and in the summary), so running from inside `confluence/` can't nest artifacts there.
 
 ### `tank.env`
 
@@ -111,6 +111,7 @@ Select one artifact with `--id` (its Confluence or Datadog ID) or, for a tracked
 ## How every command behaves
 
 - Each run prints one JSON summary to stdout (`ok`, `succeeded`, `skipped`, and `failed` counts, plus one result per file) and exits non-zero if anything failed. Invalid flags also print a summary, with `"ok": false` and an `error`, and the usage text goes to stderr.
+- `--help` (or `-h`) prints the usage text to stderr and a successful empty summary to stdout, and exits 0: `tank --help` for the commands, `tank <command> --help` for one command. It works anywhere, even outside a project, and never reads credentials.
 - In bulk mode (no `--id` or `--name`, `--pull`/`--push` only), each artifact succeeds or fails independently: one bad entry doesn't block the rest. `--fetch` always requires `--id`.
 - `--fetch` refuses to run if the ID is already tracked (use `--pull` to refresh it instead), if `--file-name` isn't kebab-case, or if the computed path already exists on disk but isn't tracked. It also refuses to write to a path that another entry already tracks, and `--force` never overrides that. A path named from the title doesn't hit this: when another entry has it, or the title has no letters or digits, the remote ID is added to the name instead (e.g. `homepage-us-abc-123.json`).
 - `--pull` refuses to overwrite a file with unsynced local edits (its content no longer matches the hash recorded in the manifest at the last sync). It reports an artifact that changed on neither side as `skipped` and writes nothing.

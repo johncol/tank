@@ -50,6 +50,9 @@ const ACTIONS_NEEDING_ID = ["fetch", "create"];
 /** Actions that may run on every tracked artifact when no selector is given. */
 const ACTIONS_ALLOWING_ALL_ENTRIES = ["pull", "push"];
 
+/** Flags that ask for a command's usage text instead of running it. */
+const HELP_FLAGS = ["--help", "-h"];
+
 /** An invalid command line. Its message is reported with the usage text. */
 export class UsageError extends Error {
   constructor(message) {
@@ -452,8 +455,8 @@ async function runAction(options, tool) {
 /**
  * Runs a sync tool's command line: validates every flag before touching the
  * manifest, the credentials, or the network, then runs the action. Prints
- * exactly one JSON summary to stdout, including on invalid flags (with the
- * usage text on stderr) and unexpected errors, and sets the exit code to 0
+ * exactly one JSON summary to stdout, including on `--help` and invalid
+ * flags (with the usage text on stderr) and unexpected errors, and sets the exit code to 0
  * when nothing failed, or 1 otherwise.
  *
  * @param {Object} tool
@@ -476,6 +479,10 @@ export async function runCli({
   saveManifest,
   argv = process.argv.slice(2),
 }) {
+  if (isHelpRequest(argv)) {
+    return reportHelp(usage);
+  }
+
   let summary;
 
   try {
@@ -501,6 +508,31 @@ export async function runCli({
     );
   }
 
+  reportSummary(summary);
+
+  return summary;
+}
+
+/**
+ * Whether the command line asks for the usage text (`--help` or `-h`
+ * anywhere), which every tank command handles before anything else.
+ * @param {string[]} argv
+ * @returns {boolean}
+ */
+export function isHelpRequest(argv) {
+  return argv.some((argument) => HELP_FLAGS.includes(argument));
+}
+
+/**
+ * Prints a command's usage text to stderr and a successful empty summary to
+ * stdout, so `--help` keeps stdout to the one JSON summary.
+ * @param {string} usage
+ * @returns {Summary}
+ */
+export function reportHelp(usage) {
+  const summary = buildSummary([]);
+
+  console.error(usage);
   reportSummary(summary);
 
   return summary;

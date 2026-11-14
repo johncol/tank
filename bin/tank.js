@@ -3,7 +3,12 @@ import { runInit } from "../project/init.js";
 import { runUpgrade } from "../project/upgrade.js";
 import { assertProjectRoot } from "../project/project-root.js";
 import { TOOLS } from "../project/tools.js";
-import { buildSummary, reportSummary } from "../shared/cli.js";
+import {
+  buildSummary,
+  isHelpRequest,
+  reportHelp,
+  reportSummary,
+} from "../shared/cli.js";
 import { getProjectRoot } from "../shared/config.js";
 import { getErrorMessage } from "../shared/error.js";
 
@@ -16,13 +21,18 @@ Commands:
   datadog       Syncs Datadog dashboards, log-based metrics, and synthetic
                 tests and suites.
 
-Run every command from the project root (the folder with tank.env). Run a
-tool command without flags to see its usage.`;
+Flags:
+  -h, --help    Prints the usage text of tank, or of the command it follows.
+
+Run every command from the project root (the folder with tank.env). Run
+"tank <command> --help" to see a command's usage.`;
 
 const [commandName, ...commandArguments] = process.argv.slice(2);
 const tool = TOOLS.find((candidate) => candidate.name === commandName);
 
-if (commandName === "init") {
+if (commandName !== undefined && isHelpRequest([commandName])) {
+  reportHelp(USAGE);
+} else if (commandName === "init") {
   await runInit(commandArguments);
 } else if (commandName === "upgrade") {
   await runInProjectRoot(runUpgrade);
@@ -39,14 +49,24 @@ if (commandName === "init") {
 
 /**
  * Runs a command that needs a project root, after checking the current
- * folder is one.
+ * folder is one. Skips the check for `--help`, which the command handles
+ * without touching the project.
  * @param {(argv: string[]) => Promise<unknown>} runCommand
  */
 async function runInProjectRoot(runCommand) {
+  if (isHelpRequest(commandArguments)) {
+    await runCommand(commandArguments);
+
+    return;
+  }
+
   try {
     assertProjectRoot(getProjectRoot());
   } catch (error) {
-    reportSummary(buildSummary([], getErrorMessage(error)));
+    const message = getErrorMessage(error);
+
+    console.error(message);
+    reportSummary(buildSummary([], message));
 
     return;
   }
