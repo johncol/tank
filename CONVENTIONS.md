@@ -77,16 +77,16 @@ A path named from the title (`--file-name` left out) uses the title's slug, e.g.
 1. Fails if the local file is missing. Pull to restore it.
 2. Fails if the remote artifact no longer exists.
 3. Fails if the remote changed since the last sync (`remoteVersion` mismatch). _Forceable._
-4. `skipped` if the local file matches `contentHash`. _Forceable_ (pushes anyway).
+4. `skipped` if the local file, after `normalizeContent` (if the kind declares one), matches `contentHash`. _Forceable_ (pushes anyway).
 5. Kind-specific checks. Each is either forceable (e.g. Confluence's markdown round-trip check) or never forceable (e.g. a log metric's `compute`, which Datadog rejects anyway).
-6. Writes the remote and updates the entry.
+6. Writes the remote and updates the entry. If `normalizeContent` changed the content, rewrites the local file with the normalized version first, so it never drifts from what was sent.
 
 ### `--create`: start tracking a new artifact written locally
 
 The local file's path comes from `--id` (kinds whose ID you choose) or from `--file-name` and the parent's folder (kinds whose ID the remote assigns).
 
 1. Fails if the ID is already tracked, or the path is tracked by another entry. Use `--push`.
-2. Fails if the local file is missing.
+2. Fails if the local file is missing. Otherwise, runs it through `normalizeContent` (if the kind declares one); everything below uses that normalized content.
 3. With a parent: fails if the parent's local file has unpushed changes, or the parent remote is missing or changed since the last sync. Pull or push it first.
 4. Fails if the remote artifact already exists. Use `--fetch`. For kinds whose ID the remote assigns, "already exists" means a remote artifact with the same title, read from the local file (a dashboard's `title`, a synthetic test's or monitor's `name`, a page's leading `# ` heading), since there's no ID to look up.
 5. Creates the remote, rewrites the file with what the remote returned, and adds the entry.

@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { parseDocument } from "yaml";
 import { pageAdapter } from "../adapter.js";
+import { adfToMarkdown } from "../../markdown.js";
 import { createOne, fetchOne, pushOne } from "../../../../shared/actions.js";
 import {
   listManifestEntries,
@@ -166,6 +167,29 @@ test("push fails when the markdown doesn't round-trip; --force pushes anyway", a
   assert.equal(fake.updateCalls.length, 1);
 });
 
+test("push normalizes a bare URL before the round-trip check, sends the normalized form, and rewrites the local file to match", async () => {
+  const fake = createFakeConfluence();
+  const entry = await trackAndEditLocally(
+    fake,
+    "See https://example.com for details."
+  );
+
+  const [result] = await pushOne(adapter, fake.client, document, entry);
+
+  assert.equal(result.status, "success", result.message);
+  assert.equal(fake.updateCalls.length, 1);
+
+  const normalizedBody = adfToMarkdown(fake.updateCalls[0].adf);
+  assert.equal(
+    normalizedBody,
+    "See [https://example.com](https://example.com) for details."
+  );
+  assert.equal(
+    await readFile(resolve(entry.path), "utf8"),
+    "See [https://example.com](https://example.com) for details."
+  );
+});
+
 test("create titles the page from the leading # heading and leaves it out of the body", async () => {
   const fake = createFakeConfluence();
 
@@ -179,6 +203,25 @@ test("create titles the page from the leading # heading and leaves it out of the
     "New body"
   );
   assert.equal(listManifestEntries(document)[0].title, "New Page Title");
+});
+
+test("create normalizes a bare URL in the body before the round-trip check and before creating", async () => {
+  const fake = createFakeConfluence();
+
+  const result = await writeAndCreate(
+    fake,
+    "# New Page Title\n\nSee https://example.com for details.\n"
+  );
+
+  assert.equal(result.status, "success", result.message);
+  assert.equal(
+    adfToMarkdown(fake.createCalls[0].adf),
+    "See [https://example.com](https://example.com) for details."
+  );
+  assert.equal(
+    await readFile(resolve("synced/new-page.md"), "utf8"),
+    "See [https://example.com](https://example.com) for details."
+  );
 });
 
 test("create fails when the file doesn't start with a # heading", async () => {

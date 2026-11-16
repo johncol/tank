@@ -69,6 +69,12 @@ import { getErrorMessage, getErrorStatus } from "./error.js";
  *   [findEntriesByName] Returns the entries (all of this kind) that --name
  *   selects. Defaults to matching the file name, with or without its
  *   extension. Return every match: more than one fails as ambiguous.
+ * @property {(content: string) => string} [normalizeContent] Rewrites local
+ *   content before push or create do anything else with it (hashing,
+ *   kind-specific checks, converting it), fixing up formatting that's
+ *   semantically unchanged but would otherwise fail round-trip-style checks.
+ *   Push rewrites the local file when this changes it, right after a
+ *   successful update, so the file never drifts from what was just sent.
  * @property {(client: any, id: string) => Promise<any>} getRemote Reads the
  *   raw remote object. Throws an error with status 404 when it doesn't exist.
  * @property {(remote: any) => RemoteDescription} describeRemote
@@ -580,13 +586,19 @@ export async function pushOne(
   }
 
   try {
-    const content = await readLocalFile(resolveFilePath(adapter, entry.path));
+    const rawContent = await readLocalFile(
+      resolveFilePath(adapter, entry.path)
+    );
 
-    if (content === null) {
+    if (rawContent === null) {
       return fail(
         `Local file ${entry.path} is missing. Use --pull to restore it.`
       );
     }
+
+    const content = adapter.normalizeContent
+      ? adapter.normalizeContent(rawContent)
+      : rawContent;
 
     const liveRemote = await getRemoteOrNull(adapter, client, entry.id);
 
@@ -634,6 +646,10 @@ export async function pushOne(
       liveRemote
     );
     const description = adapter.describeRemote(updatedRemote);
+
+    if (content !== rawContent) {
+      await writeLocalFile(resolveFilePath(adapter, entry.path), content);
+    }
 
     updateManifestEntry(
       document,
@@ -866,13 +882,17 @@ export async function createOne(
     }
 
     const filePath = resolveFilePath(adapter, artifactPath);
-    const localContent = await readLocalFile(filePath);
+    const rawLocalContent = await readLocalFile(filePath);
 
-    if (localContent === null) {
+    if (rawLocalContent === null) {
       return fail(
         `${artifactPath} doesn't exist. Write the new ${adapter.kind} to it first.`
       );
     }
+
+    const localContent = adapter.normalizeContent
+      ? adapter.normalizeContent(rawLocalContent)
+      : rawLocalContent;
 
     if (parent) {
       const parentMessage = await checkParentIsSynced(client, parent);

@@ -1,4 +1,5 @@
 import { markdownToAdf, adfToMarkdown } from "../markdown.js";
+import { normalizeMarkdown } from "../markdown-normalization.js";
 import { createTitledFetchPath } from "../../../shared/slug.js";
 
 const PAGES_PATH = "synced";
@@ -108,6 +109,12 @@ export const pageAdapter = {
   assignsIdOnCreate: true,
   usageNote:
     'Its ID is the Confluence page ID. A new page\'s file starts with its title as a "# " heading.',
+
+  // Fixes up formatting the ADF round trip would otherwise reject a push
+  // or create over -- a bare URL, a loose table separator, a heading or
+  // nested list missing its blank line -- even though none of it changes
+  // what the page says. See normalizeMarkdown's doc comment for specifics.
+  normalizeContent: normalizeMarkdown,
 
   async getRemote(client, id) {
     return client.getPage(id);
