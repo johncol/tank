@@ -5,14 +5,24 @@
  * a bare URL, a loosely-spaced table separator, or a heading or nested list
  * missing a blank line.
  *
- * Add new rules here, not in markdown.js: each one is a small, independent
- * "markdown round-trips to a different but equivalent markdown" fact about
- * the underlying extended-markdown-adf-parser, discovered the same way --
- * writing a snippet, round-tripping it through markdownToAdf/adfToMarkdown,
- * and diffing the result against the original. Wire a new rule into
- * normalizeMarkdown's pipeline below, protecting it from (and protecting
- * other rules from) anything it shouldn't touch, the same way the existing
- * rules do.
+ * Most rules here fix formatting that's a no-op over this fact: "markdown
+ * round-trips to a different but equivalent markdown" for the underlying
+ * extended-markdown-adf-parser, discovered by writing a snippet,
+ * round-tripping it through markdownToAdf/adfToMarkdown, and diffing the
+ * result against the original.
+ *
+ * One rule, joinWrappedParagraphLines, is a different kind of fix: hard-
+ * wrapped prose (a paragraph manually broken across lines at some column
+ * width) round-trips byte-for-byte unchanged, so it would pass the safety
+ * check as-is -- but the parser keeps each wrapped line's "\n" as a literal
+ * character in the paragraph's text, which Confluence then renders as a
+ * visible line break per wrapped line instead of flowing prose. That rule
+ * is deliberately rewriting content (joining lines), not just preserving
+ * it, so keep it conservative about what it touches.
+ *
+ * Wire a new rule into normalizeMarkdown's pipeline below, protecting it
+ * from (and protecting other rules from) anything it shouldn't touch, the
+ * same way the existing rules do.
  */
 
 /**
@@ -53,6 +63,15 @@ const LIST_ITEM_PATTERN = /^(\s*)(?:[-*+]|\d+[.)])\s+\S/;
 const HEADING_PATTERN = /^(\s*)#{1,6}\s+\S/;
 const TABLE_SEPARATOR_ROW_PATTERN =
   /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+// Covers a Setext H1 underline ("====="); the H2 form ("-----") is already
+// caught by TABLE_SEPARATOR_ROW_PATTERN above.
+const SETEXT_H1_UNDERLINE_PATTERN = /^=+\s*$/;
+// CommonMark thematic break: 3+ of the same "-"/"*"/"_", optionally
+// space-separated, up to 3 leading spaces. "-" forms are also already
+// caught by TABLE_SEPARATOR_ROW_PATTERN above; this adds "*" and "_".
+const THEMATIC_BREAK_PATTERN = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+const HARD_BREAK_SUFFIX_PATTERN = /( {2,}|\\)$/;
+const FENCE_DELIMITER_PATTERN = /^```/;
 
 /**
  * Rewrites bare "https://..." URLs, and "<https://...>" autolinks, as
@@ -106,6 +125,95 @@ function normalizeTableSeparators(markdown) {
 
 function indentWidth(line) {
   return line.match(/^\s*/)[0].length;
+}
+
+function endsWithHardBreak(line) {
+  return HARD_BREAK_SUFFIX_PATTERN.test(line);
+}
+
+/**
+ * True for a line that's plain, unindented paragraph prose -- the kind that
+ * gets hard-wrapped by hand -- and therefore safe to merge with its
+ * neighbors. Deliberately conservative: a heading, a list item (or its
+ * indented continuation text), a blockquote line, a table row or separator,
+ * and a thematic break or Setext underline are all left out, since joining
+ * any of those would change the markdown's structure, not just its
+ * wrapping. Indented lines are excluded too, which has the effect of also
+ * leaving list-item continuation text and blockquotes untouched -- the same
+ * literal-newline quirk can affect those, but they're left for a separate,
+ * narrower rule rather than stretched to fit this one.
+ */
+function isJoinableParagraphLine(line) {
+  return (
+    line.trim() !== "" &&
+    indentWidth(line) === 0 &&
+    !HEADING_PATTERN.test(line) &&
+    !LIST_ITEM_PATTERN.test(line) &&
+    !line.startsWith(">") &&
+    !TABLE_SEPARATOR_ROW_PATTERN.test(line) &&
+    !SETEXT_H1_UNDERLINE_PATTERN.test(line) &&
+    !THEMATIC_BREAK_PATTERN.test(line) &&
+    !FENCE_DELIMITER_PATTERN.test(line.trim()) &&
+    !line.includes("|")
+  );
+}
+
+/**
+ * Joins consecutive hard-wrapped lines of plain paragraph prose back into
+ * one line, so the ADF round trip doesn't keep each wrapped line's "\n" as
+ * a literal character in the paragraph's text -- which is otherwise stable
+ * (not caught by the round-trip safety check) but renders as a visible line
+ * break per wrapped line in Confluence instead of flowing prose.
+ *
+ * A line ending in an explicit hard break (two-or-more trailing spaces, or
+ * a trailing backslash -- both of which the parser turns into a real
+ * `hardBreak` node) is left as its own line and ends its group: that break
+ * is intentional, not wrapping, so it's kept rather than joined away.
+ *
+ * Runs on the raw markdown, before protect() replaces fenced code blocks
+ * with single-line placeholders: a placeholder itself looks like an
+ * ordinary joinable line (it's unindented plain text), so joining across
+ * one would merge a multi-line code block's placeholder into surrounding
+ * prose, corrupting it once restore() puts the real fenced block back.
+ * Tracking fence state directly on the real ``` delimiters here, instead,
+ * means the whole fenced block (delimiters and body) is always left alone.
+ */
+function joinWrappedParagraphLines(markdown) {
+  const lines = markdown.split("\n");
+  const result = [];
+  let i = 0;
+  let inFencedCode = false;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const isFenceDelimiter = FENCE_DELIMITER_PATTERN.test(line.trim());
+
+    if (isFenceDelimiter) {
+      inFencedCode = !inFencedCode;
+    }
+
+    if (isFenceDelimiter || inFencedCode || !isJoinableParagraphLine(line)) {
+      result.push(line);
+      i++;
+      continue;
+    }
+
+    let joined = line;
+    i++;
+
+    while (
+      !endsWithHardBreak(joined) &&
+      i < lines.length &&
+      isJoinableParagraphLine(lines[i])
+    ) {
+      joined = `${joined} ${lines[i].replace(/^\s+/, "")}`;
+      i++;
+    }
+
+    result.push(joined);
+  }
+
+  return result.join("\n");
 }
 
 /**
@@ -196,17 +304,25 @@ function insertMissingBlankLines(markdown) {
 
 /**
  * Fixes up markdown that's semantically fine but would otherwise fail the
- * round-trip safety check over formatting the ADF round trip normalizes on
- * its own -- a bare URL, a loosely-spaced table separator, or a heading or
- * nested list missing the blank line ADF always adds back. Applying this
- * before the round-trip check (and before converting for real) means a push
- * or create only has to fail over changes that would actually be lossy.
+ * round-trip safety check, or render wrong in Confluence, over formatting
+ * the ADF round trip either normalizes on its own or leaves untouched -- a
+ * bare URL, a loosely-spaced table separator, a heading or nested list
+ * missing the blank line ADF always adds back, or a paragraph hard-wrapped
+ * across lines by hand. Applying this before the round-trip check (and
+ * before converting for real) means a push or create only has to fail over
+ * changes that would actually be lossy.
  *
  * Fenced code blocks, inline code spans, and existing links/autolinks are
- * protected throughout, so nothing inside them is rewritten.
+ * protected throughout, so nothing inside them is rewritten. The one
+ * exception is joinWrappedParagraphLines, which runs first and does its own
+ * fenced-code tracking directly on the real ``` delimiters (see its doc
+ * comment): it has to run before fenced blocks become single-line
+ * placeholders, not after.
  */
 export function normalizeMarkdown(markdown) {
-  const code = protect(markdown, FENCED_CODE_BLOCK_PATTERN);
+  const joined = joinWrappedParagraphLines(markdown);
+
+  const code = protect(joined, FENCED_CODE_BLOCK_PATTERN);
   const inlineCode = protect(code.placeheld, INLINE_CODE_PATTERN);
   const links = protect(inlineCode.placeheld, EXISTING_LINK_PATTERN);
 
