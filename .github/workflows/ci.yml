@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   check:
+    name: Types, lint and format
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -28,6 +29,7 @@ jobs:
       - run: npm run format:check
 
   test:
+    name: Tests (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
