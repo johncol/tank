@@ -107,8 +107,15 @@ test("requestJson times out a stuck request", async (t) => {
       })
   );
 
-  await assert.rejects(request({ timeoutMilliseconds: 10 }), {
-    message:
-      "Example API GET example.com/api/v2/thing failed: timed out after 0.01s",
-  });
+  // AbortSignal.timeout doesn't keep the event loop alive, so on some Node
+  // versions the runner gives up on the pending promise before the timeout fires.
+  const keepAlive = setInterval(() => {}, 1000);
+  try {
+    await assert.rejects(request({ timeoutMilliseconds: 10 }), {
+      message:
+        "Example API GET example.com/api/v2/thing failed: timed out after 0.01s",
+    });
+  } finally {
+    clearInterval(keepAlive);
+  }
 });
